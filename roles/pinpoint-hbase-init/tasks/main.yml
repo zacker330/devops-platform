@@ -1,0 +1,37 @@
+---
+# tasks file for pinpoint-hbase-init
+- name: stat hbase had init
+  stat:
+    path: "/usr/local/.__pinpoint_hbase_had_init"
+  register: __pinpoint_hbase_had_init
+  tags:
+    - pinpoint-hbase-init
+    - pinpoint
+
+
+- name: "copy hbase-create.hbase to {{pinpoint_scripts_save_path}}"
+  copy:
+    src: "hbase-create.hbase"
+    dest: "{{pinpoint_scripts_save_path}}"
+    owner: "{{username}}"
+    group: "{{usergroup}}"
+    mode: "ug=rwx,o=rx"
+  when: __pinpoint_hbase_had_init.stat.exists == False
+  tags:
+    - pinpoint-hbase-init
+    - pinpoint
+
+
+- name: "run {{hbase_home}}/bin/hbase shell {{pinpoint_scripts_save_path}}/hbase-create.hbase"
+  shell: "{{hbase_home}}/bin/hbase shell {{pinpoint_scripts_save_path}}/hbase-create.hbase"
+  when: __pinpoint_hbase_had_init.stat.exists == False
+  tags:
+    - pinpoint-hbase-init
+    - pinpoint
+
+- file:
+    path: "/usr/local/.__pinpoint_hbase_had_init"
+    state: "touch"
+  tags:
+    - pinpoint-hbase-init
+    - pinpoint

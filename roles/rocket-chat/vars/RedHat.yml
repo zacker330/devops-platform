@@ -1,0 +1,10 @@
+---
+rocket_chat_dep_packages:
+  - nodejs
+  - git
+  - GraphicsMagick
+  - make
+  - wget
+
+
+rocket_chat_nginx_process_user: nginx

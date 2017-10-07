@@ -1,0 +1,40 @@
+---
+# defaults file for jenkins-agent
+jenkinstool_path: /usr/local/jenkinstool
+jenkins_home: "/home/{{jenkins_user}}"
+# jenkins_zips_saved_path: "{{jenkins_home}}/zips"
+
+
+jenkins_agent_master_port: 8080
+jenkins_agent_username: sa_swarm_agent
+jenkins_agent_password: "{{ lookup('password', '../credentials/{{ inventory_hostname }}/jenkins-agent/agent-password.txt') }}"
+jenkins_agent_name: "{{ inventory_hostname }}"
+jenkins_agent_num_executors: "{{ ansible_processor_cores|default(1)*2 }}"
+jenkins_agent_labels: "{{ (ansible_os_family|lower() == 'windows')|ternary('windows', 'linux') }}"
+jenkins_agent_labels_file: "{{ jenkins_swarm_path }}/labels.swarm"
+jenkins_agent_log_file: "{{ jenkins_swarm_path }}/swarm.log"
+jenkins_agent_additional_args:
+  - "-deleteExistingClients"
+  - "-disableClientsUniqueId"
+
+# Swarm client url building
+jenkins_swarm_client_version: 3.3
+jenkins_plugins_url: https://repo.jenkins-ci.org
+jenkins_plugins_repo_path: "releases/org/jenkins-ci/plugins/swarm-client/{{ jenkins_swarm_client_version }}"
+jenkins_swarm_client_jar: "swarm-client-{{ jenkins_swarm_client_version }}.jar"
+jenkins_swarm_download_url: "{{ jenkins_plugins_url }}/{{ jenkins_plugins_repo_path }}/{{ jenkins_swarm_client_jar }}"
+
+# Linux Vars
+jenkins_swarm_path: /var/lib/jenkins
+jenkins_swarm_config_path: /etc/jenkins
+jenkins_swarm_task_name: Jenkins Swarm Client
+jenkins_swarm_systemd_path: /lib/systemd/system
+jenkins_swarm_service_name: swarm-client
+
+# Windows Vars
+jenkins_swarm_client_wrapper_version: 2.0.3-pre
+jenkins_swarm_wrapper_download_url: "{{ jenkins_plugins_url }}/kohsuke/winsw/{{ jenkins_swarm_client_wrapper_version }}/WinSW.exe"
+win_base_jenkins_path: "C:\\jenkins"
+win_swarm_client_jar_path: "{{ win_base_jenkins_path }}\\{{ jenkins_swarm_client_jar }}"
+win_swarm_client_wrapper_path: "{{ win_base_jenkins_path }}\\{{ jenkins_swarm_client_jar|replace('.jar', '.exe') }}"
+win_swarm_client_wrapper_config_path: "{{ win_base_jenkins_path }}\\{{ jenkins_swarm_client_jar|replace('.jar', '.xml') }}"

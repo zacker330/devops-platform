@@ -1,0 +1,132 @@
+---
+#
+# - name: Change Root password
+#   mysql_user: name=root password="{{mysql_root_password}}" update_password=always
+
+- name: stat first secure install
+  stat:
+    path: /usr/local/.___mysql_first_secure_install_mark
+  register: ___mysql_first_secure_install_mark
+  tags:
+    - mysql
+    - mysql_secure_install
+
+- name: Remove MySQL test database.
+  mysql_db:
+    login_port: "{{mysql_port}}"
+    name: test
+    state: absent
+    # login_user: root
+    # login_password: "{{mysql_root_password}}"
+    config_file: "{{mysql_cnf_path}}"
+    login_unix_socket: "{{mysql_login_unix_socket}}"
+  when: ___mysql_first_secure_install_mark.stat.exists == False
+  tags:
+    - mysql
+    - mysql_secure_install
+
+# Has to be after the password assignment, for idempotency.
+# - name: Copy user-my.cnf file with password credentials.
+#   template:
+#     src: "user-my.cnf.j2"
+#     dest: "{{ mysql_user_home }}/.my.cnf"
+#     owner: "root"
+#     mode: 0600
+#   when: mysql_user_name != mysql_root_username and (mysql_install_packages | bool or mysql_user_password_update)
+
+#
+- name: Disallow root login remotely
+  command: '{{mysql_home}}/bin/mysql -P {{mysql_port}} -u {{mysql_root_username}} -S  {{mysql_login_unix_socket}} -e "{{item}}"'
+  changed_when: false
+  when: ___mysql_first_secure_install_mark.stat.exists == False
+  with_items:
+    - "DELETE FROM mysql.user WHERE User='{{mysql_root_username}}' AND Host NOT IN ('localhost', '127.0.0.1', '::1')"
+    - "flush privileges"
+  tags:
+    - mysql
+    - mysql_secure_install
+
+
+- name: Get list of hosts for the anonymous user.
+  command: '{{mysql_home}}/bin/mysql -P {{mysql_port}} -u {{mysql_root_username}}  -S {{mysql_login_unix_socket}} -e "{{item}}"'
+  register: mysql_anonymous_hosts
+  changed_when: false
+  check_mode: no
+  when: ___mysql_first_secure_install_mark.stat.exists == False
+  with_items:
+    - SELECT Host FROM mysql.user WHERE User = ''
+  tags:
+    - mysql
+    - mysql_secure_install
+
+
+- name: Remove anonymous MySQL users.
+  mysql_user:
+    name: ""
+    host: "{{ item }}"
+    login_port: "{{mysql_port}}"
+    state: absent
+    login_unix_socket: "{{mysql_login_unix_socket}}"
+  with_items: "{{ mysql_anonymous_hosts.stdout_lines|default([]) }}"
+  when: ___mysql_first_secure_install_mark.stat.exists == False
+  tags:
+    - mysql
+    - mysql_secure_install
+
+
+# - name: display hosts
+#   debug:
+#     msg: "{{item}}"
+#   with_items: "{{mysql_root_hosts.stdout_lines}}"
+#   tags:
+#     - mysql
+#     - mysql_secure_install
+
+
+- name: Get list of hosts for the root user.
+  command: '{{mysql_home}}/bin/mysql -P {{mysql_port}} -u {{mysql_root_username}}  -S {{mysql_login_unix_socket}} -e "{{item}}"'
+  register: mysql_root_hosts
+  changed_when: false
+  check_mode: true
+  ignore_errors: true
+  with_items:
+    - "SELECT Host FROM mysql.user WHERE User = '{{mysql_root_username}}' ORDER BY (Host='localhost') ASC"
+  when: ___mysql_first_secure_install_mark.stat.exists == False
+  tags:
+    - mysql
+    - mysql_secure_install
+
+# Set root password for MySQL < 5.7.x.
+- name: Update MySQL root password for localhost root account (< 5.7.x).
+  shell: >
+    {{mysql_home}}/bin/mysql  -P {{mysql_port}} -NBe
+    'SET PASSWORD FOR "{{mysql_root_username}}"@"{{ item }}" = PASSWORD("{{ mysql_root_password }}");'
+  with_items: "{{ mysql_root_hosts.stdout_lines|default(['localhost']) }}"
+  when: ___mysql_first_secure_install_mark.stat.exists == False
+  tags:
+    - mysql
+    - mysql_secure_install
+
+- name: Ensure default user is present.
+  mysql_user:
+    name: "{{ item.username }}"
+    host: "{{ item.host }}"
+    password: "{{ item.password }}"
+    priv: "{{ item.priv }}"
+    append_privs: "{{item.append_privs}}"
+    state: present
+    login_user: "{{mysql_root_username}}"
+    login_password: "{{mysql_root_password}}"
+    login_port: "{{mysql_port}}"
+    login_unix_socket: "{{mysql_login_unix_socket}}"
+  with_items: "{{mysql_users}}"
+  tags:
+    - mysql
+
+- name: create ___mysql_first_secure_install_mark
+  file:
+    path: "/usr/local/.___mysql_first_secure_install_mark"
+    state: "touch"
+  tags:
+    - mysql
+    - mysql_secure_install

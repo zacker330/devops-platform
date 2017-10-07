@@ -1,0 +1,17 @@
+[jenkins]
+192.168.61.11 ip=192.168.61.11 innerip=192.168.61.11
+
+[gitlab]
+192.168.61.12 ip=192.168.61.11 innerip=192.168.61.12
+
+[rocketchat-server]
+192.168.61.15  innerip=192.168.61.15
+
+[mongodb]
+192.168.61.15  innerip=192.168.61.15
+
+
+[all:vars]
+env="local-env"
+ansible_ssh_user="vagrant"
+ansible_ssh_pass="vagrant"

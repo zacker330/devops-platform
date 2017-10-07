@@ -1,0 +1,9 @@
+<service>
+  <id>{{ jenkins_swarm_task_name|replace(' ', '_')|lower }}</id>
+  <name>{{ jenkins_swarm_task_name }}</name>
+  <description>This service runs Jenkins continuous integration system.</description>
+  <env name="JENKINS_HOME" value="%BASE%"/>
+  <executable>java</executable>
+  <arguments>-Xrs -Xms256m -jar "%BASE%\{{ jenkins_swarm_client_jar }}" -master "http://{{ jenkins_agent_master|default('') }}:{{ jenkins_agent_master_port|default('80') }}" -executors {{ jenkins_agent_num_executors }} -fsroot "C:\\jenkins" -name "{{ jenkins_agent_name }}" -username "{{ jenkins_agent_username }}" -password "{{ jenkins_agent_password }}" -labels "{{ jenkins_agent_labels }}" -disableSslVerification -disableClientsUniqueId</arguments>
+  <logmode>rotate</logmode>
+</service>

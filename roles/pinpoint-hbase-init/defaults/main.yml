@@ -1,0 +1,3 @@
+---
+# defaults file for pinpoint-hbase-init
+pinpoint_scripts_save_path: "/tmp"

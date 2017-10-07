@@ -1,0 +1,205 @@
+---
+- name: install dependencies
+  yum:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - gcc
+    - make
+    # - libc6-dev
+  tags:
+    - redis
+
+
+- name: "stat {{redis_source_tar_gz_file_path}}"
+  stat:
+    path: "{{redis_source_tar_gz_file_path}}"
+  register: __redis_tar_file
+  tags:
+    - redis
+
+
+- name: "download redis {{redis_download_url}}"
+  get_url:
+    url: "{{redis_download_url}}"
+    dest: "{{redis_source_dir}}"
+    owner: "{{ redis_user }}"
+    group: "{{ redis_group }}"
+  when: __redis_tar_file.stat.exists == False
+  tags:
+    - redis
+
+- name: chown
+  file:
+    path: "{{redis_source_dir}}/{{redis_source_tar_gz_file_name}}"
+    owner: "{{ redis_user }}"
+    group: "{{ redis_group }}"
+    mode: "ogu=rwx"
+  tags:
+    - redis
+
+
+- name: "Uncompress the redis tar at {{redis_source_dir}}/{{redis_source_tar_gz_file_name}}"
+  unarchive:
+    src: "{{redis_source_dir}}/{{redis_source_tar_gz_file_name}}"
+    dest: "{{redis_source_dir}}"
+    owner: "{{redis_user}}"
+    group: "{{redis_group}}"
+    remote_src: True
+  tags:
+    - redis
+
+- name: "stat had_redis{{redis_port}}_compile"
+  stat:
+    path: /usr/local/src/.had_redis_compile
+  register: had_redis_compile
+  tags:
+    - redis
+
+- name: compile redis
+  command: make -j{{ ansible_processor_cores | default(2) }}
+  args:
+    chdir: "{{redis_source_path}}"
+  when: had_redis_compile.stat.exists == False
+  tags:
+    - redis
+
+- name: touch had_redis_compile
+  file:
+    path: "/usr/local/src/.had_redis{{redis_port}}_compile"
+    state: "touch"
+  tags:
+    - redis
+
+
+# - name: create redis install directory
+#   file:
+#     path: "{{ redis_install_dir }}"
+#     state: directory
+#     owner: "{{redis_user}}"
+#     group: "{{redis_group}}"
+#   when: redis.stat.exists == False
+#   tags:
+#     - redis
+
+
+- name: "create {{redis_home}}"
+  file:
+    path: "{{redis_home}}"
+    state: directory
+    owner: "{{ redis_user }}"
+    group: "{{redis_group}}"
+    mode: "ug=rwx,o=rx"
+  tags:
+    - redis
+
+- name: "stat /usr/local/src/.had_redis{{redis_port}}_make"
+  stat:
+    path: "/usr/local/src/.had_redis{{redis_port}}_make"
+  register: __had_redis_make
+  tags:
+    - redis
+
+- name: install redis
+  command: make PREFIX={{ redis_home }} install
+  args:
+    chdir: "{{redis_source_path}}"
+  when: __had_redis_make.stat.exists == False
+  tags:
+    - redis
+
+- name: chown for redis_home
+  file:
+    path: "{{redis_home}}"
+    recurse: yes
+    state: directory
+    owner: "{{redis_user}}"
+    group: "{{redis_group}}"
+  tags:
+    - redis
+
+
+- name: touch "/usr/local/src/.had_redis{{redis_port}}_make"
+  file:
+    state: "touch"
+    path: "/usr/local/src/.had_redis{{redis_port}}_make"
+    owner: "{{ redis_user }}"
+    group: "{{ redis_group }}"
+  tags:
+    - redis
+
+- name: create log directory if it does not exist
+  file:
+    state: directory
+    path: "{{redis_log_dir}}"
+    owner: "{{ redis_user }}"
+    group: "{{redis_group}}"
+    mode: "ug=rw,o=r"
+  tags:
+    - redis
+
+- name: create redis config file
+  template:
+    src: redis.conf.j2
+    dest: "{{redis_conf_path}}"
+    owner: "{{ redis_user }}"
+    group: "{{ redis_group }}"
+    force: true
+  notify:
+    - redis restart
+  tags:
+    - redis
+
+- file:
+    path: "{{redis_home}}"
+    state: directory
+    recurse: true
+    mode: "u=rwx,g=rwx,o=rx"
+    owner: "{{ redis_user }}"
+    group: "root"
+  tags:
+    - redis
+
+- name: copy systemd conf
+  template:
+    dest: "/etc/systemd/system/{{ redis_service_name }}"
+    src: redis-server.service
+    owner: "{{ redis_user }}"
+    group: "{{ redis_group }}"
+    mode: "ug=rwx,o=rx"
+    force: true
+  # notify:
+  #   - redis restart
+  tags:
+    - redis
+
+- name: reload systemd
+  shell: systemctl daemon-reload
+  tags:
+    - redis
+
+- name: sysctl vm.overcommit_memory=1
+  shell: sysctl vm.overcommit_memory=1
+  ignore_errors: yes
+  tags:
+    - redis
+
+
+- name: ensure redis is running
+  service:
+    name: "{{ redis_service_name }}"
+    state: started
+    enabled: true
+  # become_user: "{{redis_user}}"
+  tags:
+    - redis
+
+
+- name: "Wait for Redis port {{redis_bind}}:{{redis_port}}"
+  wait_for:
+    host: "{{redis_bind}}"
+    port: "{{redis_port}}"
+    state: started
+    timeout: 30
+  tags:
+    - redis

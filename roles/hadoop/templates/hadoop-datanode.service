@@ -1,0 +1,17 @@
+[Unit]
+Description=dfs
+
+[Service]
+Type=forking
+User={{hadoop_user}}
+Group={{hadoop_group}}
+Restart=on-failure
+Environment=JAVA_HOME={{JAVA_HOME}}
+Environment=HADOOP_HOME={{ hadoop_home }}
+WorkingDirectory={{hadoop_home}}
+ExecStop="/bin/sh {{ hadoop_home }}/sbin/hadoop-daemon.sh  --script hdfs start datanode"
+ExecStart="/bin/sh {{ hadoop_home }}/sbin/hadoop-daemon.sh  --script hdfs stop datanode"
+PIDFile=/tmp/hadoop-datanode.pid
+
+[Install]
+WantedBy=multi-user.target

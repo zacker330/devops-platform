@@ -1,0 +1,50 @@
+[client]
+socket = {{mysql_login_unix_socket}}
+default-character-set = utf8mb4
+
+
+[mysqld]
+port = {{mysql_port}}
+basedir = {{ mysql_home }}
+datadir = {{ mysql_data_dir }}
+tmpdir = {{ mysql_tmp_dir }}
+socket = {{mysql_login_unix_socket}}
+pid-file={{ mysql_tmp_dir }}/open.pid
+log-bin={{ mysql_logbin_dir }}/mysqld_bin
+slow_query_log_file = {{ mysql_log_dir }}/open_mysql.slow
+log-error = {{ mysql_log_dir }}/open_error.log
+innodb_data_home_dir = {{ mysql_data_dir }}
+innodb_log_group_home_dir = {{ innodb_mysql_log_dir }}
+user={{mysql_user}}
+server_id =100
+skip-external-locking
+key_buffer_size =256M
+max_allowed_packet = 128M
+table_open_cache = 256
+sort_buffer_size =10M
+join_buffer_size=10M
+net_buffer_length = 8K
+read_buffer_size = 10M
+read_rnd_buffer_size = 10M
+myisam_sort_buffer_size = 8M
+character-set-server=utf8mb4
+lower_case_table_names=1
+wait_timeout=31536000
+innodb_log_files_in_group=3
+interactive-timeout=31536000
+query_cache_size=512M
+query_cache_limit=1268435456
+max_connections=1000
+long_query_time=0.5
+slow_query_log=ON
+innodb_data_file_path = ibdata1:1G:autoextend
+innodb_file_per_table
+innodb_lock_wait_timeout = 10
+innodb_buffer_pool_size=512M
+thread_cache_size=1000
+innodb_log_file_size = 512M
+innodb_log_buffer_size = 32M
+innodb_flush_log_at_trx_commit = 2
+innodb-open-files=1000
+max_heap_table_size=96M
+tmp_table_size=96M

@@ -1,0 +1,17 @@
+[Unit]
+Description=Kafka{{kafka_id}}
+Before=
+After=network.target
+
+[Service]
+User={{ kafka_user }}
+Group={{ kafka_group }}
+Environment=JAVA_HOME={{ JAVA_HOME }}
+CHDIR= {{ kafka_data_dir }}
+ExecStart={{ KAFKA_HOME }}/bin/kafka-server-start.sh {{ kafka_conf_dir }}/server{{kafka_id}}.properties
+ExecStop={{ KAFKA_HOME }}/bin/kafka-server-stop.sh
+
+Restart=on-abort
+
+[Install]
+WantedBy=multi-user.target

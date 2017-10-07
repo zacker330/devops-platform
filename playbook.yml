@@ -1,0 +1,221 @@
+---
+- hosts: all
+  become: true
+  gather_facts: true
+  vars_files:
+    - "vars/app/common.yml"
+    - "vars/app/{{env}}.yml"
+  roles:
+    - common
+    - os-init
+
+- hosts: mysql-server
+  become: true
+  gather_facts: true
+  vars_files:
+    - "vars/app/common.yml"
+    - "vars/app/{{env}}.yml"
+  roles:
+    - {"role": "ansible-role-firewall"}
+    - {"role": mysql-ansible }
+
+
+- hosts: nginx
+  become: true
+  gather_facts: true
+  vars_files:
+    - "vars/app/common.yml"
+    - "vars/app/{{env}}.yml"
+  roles:
+    - {"role": openresty }
+
+- hosts: zabbix-server
+  become: true
+  gather_facts: true
+  vars_files:
+    - "vars/app/common.yml"
+    - "vars/app/{{env}}.yml"
+  roles:
+    - {"role": "ansible-role-firewall"}
+    - {"role": ansible-role-php }
+    - { role: ansible-zabbix-server, database_type: mysql, database_type_long: mysql }
+    - zabbix-front
+
+- hosts: all
+  become: true
+  gather_facts: true
+  vars_files:
+    - "vars/app/common.yml"
+    - "vars/app/{{env}}.yml"
+  roles:
+    - ansible-zabbix-agent
+
+
+- hosts: zookeepers
+  become: true
+  gather_facts: true
+  vars_files:
+    - "vars/app/common.yml"
+    - "vars/app/{{env}}.yml"
+  roles:
+    - common
+    - {"role": jdk8, "use_ali_oss": false }
+    - {"role": "ansible-role-firewall"}
+    - zookeeper-ansible-role
+
+
+- hosts: hadoop-namenode
+  become: true
+  gather_facts: true
+  vars_files:
+    - "vars/app/common.yml"
+    - "vars/app/{{env}}.yml"
+  roles:
+    - common
+    - {"role": jdk8, "use_ali_oss": false }
+    - {"role": "ansible-role-firewall"}
+    - {role: "hadoop", hadoop_is_namenode: "true"}
+
+
+- hosts: hadoop-datanode
+  become: true
+  gather_facts: true
+  vars_files:
+    - "vars/app/common.yml"
+    - "vars/app/{{env}}.yml"
+  roles:
+    - common
+    - {"role": jdk8, "use_ali_oss": false }
+    - {"role": "ansible-role-firewall"}
+    - {role: "hadoop", hadoop_is_datanode: "true"}
+
+
+- hosts: hbase-master
+  become: true
+  gather_facts: true
+  vars_files:
+    - "vars/app/common.yml"
+    - "vars/app/{{env}}.yml"
+  roles:
+    - {"role": hbase, "hbase_is_master": 'true'}
+
+- hosts: hbase-slaves
+  become: true
+  gather_facts: true
+  vars_files:
+    - "vars/app/common.yml"
+    - "vars/app/{{env}}.yml"
+  roles:
+    - common
+    - {"role": jdk8, "use_ali_oss": false }
+    - {"role": "ansible-role-firewall"}
+    - {"role": hbase}
+
+- hosts: pinpoint-collector
+  become: true
+  gather_facts: true
+  vars_files:
+    - "vars/app/common.yml"
+    - "vars/app/{{env}}.yml"
+  roles:
+    - common
+    - {"role": jdk8, "use_ali_oss": false }
+    - {"role": pinpoint-hbase-init}
+    - {"role": "pinpoint-server-ansible", "pinpoint_server_role": "web"}
+    - {"role": "pinpoint-server-ansible", "pinpoint_server_role": "collector"}
+
+
+
+- hosts: mongodb
+  become: true
+  gather_facts: true
+  vars_files:
+    - "vars/app/common.yml"
+    - "vars/app/{{env}}.yml"
+  roles:
+    - common
+    - {"role": "ansible-role-firewall"}
+    - {"role": ansible-role-mongodb }
+
+
+- hosts: rocketchat-server
+  become: true
+  gather_facts: true
+  vars_files:
+    - "vars/app/common.yml"
+    - "vars/app/{{env}}.yml"
+  roles:
+    - {"role": ansible-role-nodejs }
+    - {"role": rocket-chat }
+    - {"role": ansible-hubot}
+
+
+- hosts: jenkins
+  become: true
+  vars_files:
+    - "vars/app/common.yml"
+    - "vars/app/{{env}}.yml"
+  roles:
+    - jdk8
+    - jenkins
+    - openresty
+    - jenkins-openresty-conf
+
+- hosts: jenkins-agent
+  become: true
+  vars_files:
+    - "vars/app/common.yml"
+    - "vars/app/{{env}}.yml"
+  roles:
+    - jdk8
+    - {role: "swarm-agent", jenkins_agent_labels: "jdk8", jenkins_agent_username: admin}
+
+
+
+
+
+- hosts: gitlab
+  become: true
+  vars_files:
+    - "vars/app/common.yml"
+    - "vars/app/{{env}}.yml"
+  roles:
+    - {role: "jdk8", }
+    - ansible-role-gitlab
+
+
+
+
+- hosts: zabbix-agents
+  become: true
+  gather_facts: true
+  vars_files:
+    - "vars/app/common.yml"
+    - "vars/app/{{env}}.yml"
+  vars:
+      env: "local-env"
+  tasks:
+    - name: Create a new host or update an existing host's info
+      become: false
+      delegate_to: 127.0.0.1
+      zabbix_host:
+        server_url: "{{zabbix_url}}"
+        login_user: "{{zabbix_api_user}}"
+        login_password: "{{zabbix_api_pass}}"
+        host_name: "{{innerip}}"
+        visible_name: "{{innerip}}"
+        host_groups:
+          - Linux servers
+        link_templates:
+          - Template OS Linux
+        status: enabled
+        force: yes
+        state: present
+        inventory_mode: automatic
+        interfaces:
+          - type: 1
+            main: 1
+            useip: 1
+            ip: "{{innerip}}"
+            dns: ""
+            port: 10050

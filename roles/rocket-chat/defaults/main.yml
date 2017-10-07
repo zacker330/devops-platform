@@ -1,0 +1,41 @@
+---
+# defaults/main.yml: Defaults for RocketChat.Ansible
+rocket_chat_automatic_upgrades: false
+rocket_chat_upgrade_backup: true
+rocket_chat_upgrade_backup_path: "{{ rocket_chat_application_path }}"
+rocket_chat_application_path: /var/lib/rocket.chat
+rocket_chat_version: "0.59.0-rc.5"
+rocket_chat_tarball_remote: https://rocket.chat/releases/{{ rocket_chat_version }}/download
+rocket_chat_tarball_sha256sum: f87ad01656e345c1f0e5c449e09c33d5819912e96b080eb2a93935de772726c1.
+rocket_chat_tarball_check_checksum: false
+rocket_chat_tarball_fetch_timeout: 100
+rocket_chat_tarball_validate_remote_cert: true
+rocket_chat_service_user: rocketchat
+rocket_chat_service_group: rocketchat
+rocket_chat_service_host: "{{ innerip }}"
+rocket_chat_service_port: 3000
+rocket_chat_node_version: 4.5.0
+rocket_chat_node_path: /usr/local/n/versions/node/{{ rocket_chat_node_version }}/bin
+rocket_chat_node_orig_npm: /usr/bin/npm
+
+##
+rocket_chat_file_upload_folder: /rocket_chat_file
+
+
+# MongoDB settings
+rocket_chat_mongodb_server: 127.0.0.1
+rocket_chat_mongodb_port: 27017
+
+# nginx settings
+rocket_chat_include_nginx: true
+rocket_chat_ssl_generate_certs: false
+rocket_chat_ssl_key_path: /etc/nginx/rocket_chat.key
+rocket_chat_ssl_cert_path: /etc/nginx/rocket_chat.crt
+rocket_chat_ssl_deploy_data: false
+rocket_chat_ssl_key_file: ~
+rocket_chat_ssl_cert_file: ~
+rocket_chat_nginx_enable_pfs: true
+rocket_chat_nginx_generate_pfs_key: true
+rocket_chat_nginx_pfs_key_numbits: 2048
+rocket_chat_nginx_pfs_key_path: /etc/nginx/rocket_chat.pem
+rocket_chat_nginx_pfs_file: ~

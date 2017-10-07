@@ -1,0 +1,7 @@
+---
+- name: redis restart
+  service:
+    name: "{{ redis_service_name }}"
+    state: restarted
+  tags:
+    - redis

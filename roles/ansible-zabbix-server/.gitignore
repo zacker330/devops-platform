@@ -1,0 +1,10 @@
+.kitchen/
+.idea/
+.bundle/
+vendor/
+*.retry
+.molecule
+.cache
+__pycache__
+.env
+.virtualenv

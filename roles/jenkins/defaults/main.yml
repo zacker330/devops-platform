@@ -1,0 +1,47 @@
+---
+# Optional method of pinning a specific version of Jenkins and/or overriding the
+# default Jenkins packaging URL.
+# jenkins_version: "1.644"
+# jenkins_pkg_url: "https://www.example.com/"
+# http://pkg.jenkins-ci.org/debian-stable/binary/jenkins_2.7.4_all.deb
+# jenkins_pkg_url: http://pkg.jenkins-ci.org/debian-stable/binary/
+# jenkins_version: 2.7.4
+
+jenkins_init_file: /etc/default/jenkins
+jenkins_http_port_param: HTTP_PORT
+jenkins_java_options_env_var: JAVA_ARGS
+
+jenkins_group: jenkins
+jenkins_user: jenkins
+
+jenkins_war_version: 2.46.3
+jenkins_war_url: "https://mirrors.tuna.tsinghua.edu.cn/jenkins/war-stable/{{ jenkins_war_version }}/jenkins.war"
+jenkins_war_sha256sum: "6eb89e410b263a4c73028cc4e0165e8fd567c0a35df43d12ab4117a1fc86ad31 jenkins.war"
+jenkins_connection_delay: 5
+jenkins_connection_retries: 60
+jenkins_home: /home/jenkins
+jenkins_home_data: "{{jenkins_home}}/data"
+jenkins_home_tmp: "{{jenkins_home}}/tmp"
+
+jenkins_hostname: localhost
+jenkins_http_port: 8666
+jenkins_jar_location: "{{jenkins_home}}/jenkins-cli.jar"
+jenkins_plugins: ["swarm", "blueocean","ansible","maven-plugin","blueocean-pipeline-editor", "ldap","ssh-slaves","credentials-binding","ws-cleanup", "git","shared-workspace","envinject","slave-setup","build-pipeline-plugin","ssh","jobConfigHistory","scm-sync-configuration","role-strategy","cloudbees-folder","golang","gitlab-plugin","gitlab-hook","pipeline-model-definition","
+parameterized-trigger","emailext-template",
+"ThinBackup", # backup jenkins
+"rocketchatnotifier", # rocketchat integrate
+]
+# jenkins_plugins: ['blueocean']
+jenkins_url_prefix: "/jenkins"
+jenkins_java_options: "-Djenkins.install.runSetupWizard=false"
+jenkins_plugin_updates_expiration: 86400
+jenkins_plugin_timeout: 120
+jenkins_admin_username: admin
+jenkins_admin_password: admin
+jenkins_admin_password_file: ""
+
+jenkins_init_changes:
+  - option: "JENKINS_ARGS"
+    value: "--prefix={{ jenkins_url_prefix }}"
+  - option: "{{ jenkins_java_options_env_var }}"
+    value: "{{ jenkins_java_options }}"

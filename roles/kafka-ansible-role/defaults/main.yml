@@ -1,0 +1,42 @@
+---
+kafka_id: 1
+kafka_install_dir: "/app"
+KAFKA_HOME: "{{kafka_install_dir}}/kafka{{kafka_id}}"
+kafka_apache_mirror: http://mirrors.tuna.tsinghua.edu.cn
+kafka_version_kafka: "0.9.0.1"
+kafka_version_scala: "2.11"
+kafka_tar_file_name: "kafka_{{kafka_version_scala}}-{{kafka_version_kafka}}.tgz"
+kafka_download_url: "{{kafka_apache_mirror}}/apache/kafka/{{kafka_version_kafka}}/{{kafka_tar_file_name}}"
+kafka_auto_create_topics: "true"
+kafka_service_name: "kafka{{kafka_id}}"
+kafka_default_replication_factor: 1
+kafka_user: "{{username}}"
+kafka_group: "{{usergroup}}"
+kafka_heap_opts: "-Xmx1000m -Xms1000m"
+  # heap_opts: "-Xmx{{ (ansible_memtotal_mb / 2) | int }}m -Xms{{ (ansible_memtotal_mb / 2) | int }}m"
+kafka_conf_dir: "{{KAFKA_HOME}}/config"
+kafka_data_dir: "{{KAFKA_HOME}}/data"
+kafka_log_dir: "{{KAFKA_HOME}}/log"
+kafka_bin_dir: "{{KAFKA_HOME}}/bin"
+kafka_tmp_dir: "{{KAFKA_HOME}}/tmp"
+kafka_bind_ip: "{{ innerip }}"
+kafka_hostname: "{{ kafka_bind_ip }}"
+kafka_jmx_port: 9999
+kafka_brokerport: 9092
+kafka_listeners: "PLAINTEXT://:{{kafka_brokerport}}"
+kafka_log_cleanup_interval_mins: 1
+kafka_log_flush_interval_messages: 10000
+kafka_log_flush_interval_ms: 1000
+kafka_log_level: WARN
+#kafka_log_retention_bytes: -1
+kafka_log_retention_hours: 72
+kafka_log_retention_check_interval_ms: 300000
+kafka_log_segment_bytes: 104857600
+kafka_num_io_threads: 4
+kafka_num_network_threads: 4
+kafka_num_partitions: 12
+kafka_socket_receive_buffer_bytes: 1048576
+kafka_socket_request_max_bytes: 104857600
+kafka_socket_send_buffer_bytes: 1048576
+kafka_zookeeper_connection_timeout_ms: 1000000
+kafka_zookeeper_connect: "{{ zookeeper_hosts_port_array | join(',') }}"

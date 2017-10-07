@@ -1,0 +1,4 @@
+---
+# defaults file for php-openresty
+jenkins_http_port: 8666
+openresty_jenkins_listen_port: 80

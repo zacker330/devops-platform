@@ -1,0 +1,89 @@
+---
+- group: name={{jenkins_group}} system=yes
+  tags:
+    - jenkins
+
+- user: name={{jenkins_user}} group={{jenkins_group}} system=yes createhome=yes
+  tags:
+    - jenkins
+
+- name: pip install oss2
+  command: "{{item}}"
+  with_items:
+    - "yum -y install epel-release"
+    - "yum install -y python-pip"
+    - "pip install -U pip"
+    - "pip install oss2"
+
+- name: Create Swarm directory
+  file:
+    path: "{{ jenkins_swarm_path }}"
+    state: directory
+    owner: "{{jenkins_user}}"
+    group: "{{jenkins_group}}"
+    mode: "ug=rwx,o=rx"
+
+- name: create worksapce
+  file:
+    path: "/workspace"
+    state: directory
+    owner: "{{jenkins_user}}"
+    group: "{{jenkins_group}}"
+    mode: "ug=rwx,o=rx"
+
+- name: Download the Jenkins Swarm Client
+  get_url:
+    url: "{{ jenkins_swarm_download_url }}"
+    dest: "{{ jenkins_swarm_path }}"
+    owner: "{{jenkins_user}}"
+    group: "{{jenkins_group}}"
+    mode: "ug=rwx,o=rx"
+  # notify:
+  #   - Restart Swarm Client service
+  register: swarm_jar
+
+- name: Create the Jenkins Swarm Client config directory
+  file:
+    path: "{{ jenkins_swarm_config_path }}"
+    state: directory
+    owner: "{{jenkins_user}}"
+    group: "{{jenkins_group}}"
+    mode: "ug=rwx,o=rx"
+  tags:
+    - configuration
+
+- name: Create the Jenkins Swarm Client config file
+  template:
+    src: swarm-client-linux.j2
+    dest: "{{ jenkins_swarm_config_path }}/swarm-client"
+    owner: jenkins
+    group: jenkins
+    mode: 0755
+  tags:
+    - configuration
+  # notify:
+  #   - Restart Swarm Client service
+
+- name: Copy the Swarm startup
+  template:
+    src: swarm-client.service.j2
+    dest: "/etc/systemd/system/{{ jenkins_swarm_service_name }}.service"
+    owner: "{{jenkins_user}}"
+    group: "{{jenkins_group}}"
+    mode: "ug=rwx,o=rx"
+  # notify:
+  #   - Restart Swarm Client service
+
+- name: Reload Systemd
+  command: "systemctl daemon-reload"
+  when: ansible_service_mgr == "systemd"
+  tags:
+    - jenkins
+
+
+- name: Restart Swarm Client service
+  service:
+    name: "{{ jenkins_swarm_service_name }}"
+    enabled: yes
+    state: restarted
+  become: true

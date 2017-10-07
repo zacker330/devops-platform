@@ -1,0 +1,252 @@
+---
+# tasks/main.yml: Main tasks for RocketChat.Ansible
+
+- include_vars: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_distribution }}.yml"
+    - "{{ ansible_os_family }}.yml"
+  tags:
+    - rocketchat
+
+- include: repo_RedHat.yml
+  when: ansible_os_family == "RedHat"
+  tags:
+    - rocketchat
+
+
+- name: Ensure the Rocket.Chat service group is present
+  group:
+    name: "{{ rocket_chat_service_group }}"
+    state: present
+    system: true
+  tags:
+    - rocketchat
+
+
+- name: Ensure the Rocket.Chat service user is present
+  user:
+    comment: Rocket.Chat Service User
+    name: "{{ rocket_chat_service_user }}"
+    group: "{{ rocket_chat_service_group }}"
+    home: "{{ rocket_chat_application_path }}"
+    createhome: true
+    shell: /bin/false
+    state: present
+    system: true
+  tags:
+    - rocketchat
+
+
+- name: Ensure Rocket.Chat dependencies are installed
+  package:
+    name: "{{ item }}"
+    state: present
+  retries: 2
+  with_items: "{{rocket_chat_dep_packages}}"
+  tags:
+    - rocketchat
+
+
+- name: Ensure link /bin/node -> /bin/nodejs exists
+  file:
+    src: /bin/node
+    dest: /bin/nodejs
+    state: link
+  when: ansible_os_family == "RedHat"
+  tags:
+    - rocketchat
+
+
+- name: Ensure n (NodeJS) is installed
+  npm:
+    name: n
+    global: true
+    executable: "{{ rocket_chat_node_orig_npm }}"
+  tags:
+    - rocketchat
+
+
+- name: Check to see if n has installed the required 'node' binary
+  stat:
+    path: "{{ rocket_chat_node_path }}/node"
+  register: n_node_bin
+  tags:
+    - rocketchat
+
+
+- name: Install the supported NodeJS environment via n
+  shell: n {{ rocket_chat_node_version }}
+  when: not n_node_bin.stat.exists|bool
+  tags:
+    - rocketchat
+
+
+- name: Check to see if this is the initial Rocket.Chat deployment
+  stat:
+    path: "{{ rocket_chat_application_path }}/bundle"
+  register: rocket_chat_deploy_state
+  tags:
+    - rocketchat
+
+- name: Set the initial Rocket.Chat upgrade status
+  set_fact:
+    rocket_chat_upgraded: false
+  tags:
+    - rocketchat
+
+- name: "copy rocket.chat-{{ rocket_chat_version }}.tgz"
+  copy:
+    src: "rocket.chat-{{ rocket_chat_version }}.tgz"
+    dest: "{{ rocket_chat_application_path }}/rocket.chat-{{ rocket_chat_version }}.tgz"
+    owner: "{{ rocket_chat_service_user }}"
+    group: "{{ rocket_chat_service_user }}"
+    mode: "ug=rwx,o=rx"
+  ignore_errors: true
+  tags:
+    - rocketchat
+
+
+- name: "state {{ rocket_chat_application_path }}/rocket.chat-{{ rocket_chat_version }}.tgz"
+  stat:
+    path: "{{ rocket_chat_application_path }}/rocket.chat-{{ rocket_chat_version }}.tgz"
+  register:   __rocket_chat_application_path
+  tags:
+    - rocketchat
+
+
+- name: "Fetch the Rocket.Chat binary tarball from {{ rocket_chat_tarball_remote }}"
+  get_url:
+    url: "{{ rocket_chat_tarball_remote }}"
+    checksum: "{{ (rocket_chat_tarball_check_checksum == false) | ternary(omit, 'sha256: ' + rocket_chat_tarball_sha256sum) }}"
+    force: "{{ (rocket_chat_tarball_check_checksum == false) | ternary('yes', omit) }}"
+    dest: "{{ rocket_chat_application_path }}/rocket.chat-{{ rocket_chat_version }}.tgz"
+    timeout: "{{ rocket_chat_tarball_fetch_timeout }}"
+    validate_certs: "{{ rocket_chat_tarball_validate_remote_cert }}"
+  # Temp fix for ansible/ansible#15915 ( Broken include in handlers )
+  # https://github.com/ansible/ansible/issues/15915
+  #notify: Upgrade Rocket.Chat
+  become: true
+  become_user: "{{ rocket_chat_service_user }}"
+  register: result
+  retries: 3
+  changed_when: (result|changed)
+                or (not rocket_chat_tarball_check_checksum)
+  when: __rocket_chat_application_path.stat.exists == False
+  tags:
+    - rocketchat
+
+
+- name: Upgrade Rocket.Chat
+  include: upgrade.yml
+  when:
+    - result|changed
+    - rocket_chat_deploy_state.stat.exists
+  tags:
+    - rocketchat
+
+
+
+- meta: flush_handlers
+  tags:
+    - rocketchat
+
+
+- name: Unpack the Rocket.Chat binary tarball
+  unarchive:
+    copy: false
+    src: "{{ rocket_chat_application_path }}/rocket.chat-{{ rocket_chat_version }}.tgz"
+    dest: "{{ rocket_chat_application_path }}"
+    creates: "{{ rocket_chat_application_path }}/bundle"
+  become: true
+  become_user: "{{ rocket_chat_service_user }}"
+  tags:
+    - rocketchat
+
+
+
+- name: Install Rocket.Chat via NPM
+  npm:
+    state: present
+    path: "{{ rocket_chat_application_path }}/bundle/programs/server"
+    executable: "{{ rocket_chat_node_orig_npm }}"
+  become: true
+  become_user: "{{ rocket_chat_service_user }}"
+  tags:
+    - rocketchat
+
+
+
+- name: Ensure the Rocket.Chat application data permissions are correct
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ rocket_chat_service_user }}"
+    group: "{{ rocket_chat_service_user }}"
+    recurse: true
+  with_items:
+    - "{{rocket_chat_file_upload_folder}}"
+    - "{{rocket_chat_application_path}}"
+  tags:
+    - rocketchat
+
+
+
+- include_vars: "{{ item }}"
+  with_first_found:
+    - "{{ ansible_distribution }}_{{ ansible_distribution_major_version }}.yml"
+    - "{{ ansible_os_family }}_{{ ansible_distribution_major_version }}.yml"
+    - "{{ ansible_distribution }}.yml"
+    - "{{ ansible_os_family }}.yml"
+  tags:
+    - rocketchat
+
+
+
+- name: Deploy the Rocket.Chat service file
+  template:
+    src: "{{ rocket_chat_service_template.src }}"
+    dest: "{{ rocket_chat_service_template.dest }}"
+  notify:
+    - Update the Rocket.Chat service configuration
+    - Restart the Rocket.Chat service
+  tags:
+    - rocketchat
+
+
+
+- meta: flush_handlers
+  tags:
+    - rocketchat
+
+
+# - name: Ensure the MongoDB replSets have been initiated
+# shell: >-
+#     mongo --eval 'rs.initiate()' &&
+#     touch .mongo_rs_initialised
+#   become: yes
+#   become_user: mongodb
+#   args:
+#     chdir: /var/lib/mongodb
+#     creates: /var/lib/mongodb/.mongo_rs_initialised
+#   when: rocket_chat_include_mongodb|bool
+
+- name: Restart the Rocket.Chat service [UPGRADE]
+  service:
+    name: rocketchat
+    state: restarted
+  when: rocket_chat_upgraded|bool
+  tags:
+    - rocketchat
+
+- name: Ensure the Rocket.Chat service is running/enabled
+  service:
+    name: rocketchat
+    state: started
+    enabled: true
+  tags:
+    - rocketchat
+
+
+- include: nginx.yml
+  tags:
+    - rocketchat

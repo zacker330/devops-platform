@@ -1,0 +1,20 @@
+---
+zk_install_dir: /app
+ZK_HOME: "{{zk_install_dir}}/zookeeper"
+zookeeper_version: 3.4.6
+zookeeper_client_port: 2181
+zookeeper_connect_port: 2888
+zookeeper_election_port: 3888
+zookeeper_conf_dir: "{{ZK_HOME}}/conf"
+zookeeper_data_dir: "{{ZK_HOME}}/data"
+zookeeper_bin_dir: "{{ZK_HOME}}/bin"
+zookeeper_tmp_dir: "{{ZK_HOME}}/tmp"
+zookeeper_log_dir: "{{ZK_HOME}}/log"
+zookeeper_service_name: "zookeeper{{myid}}"
+zookeeper_group: "{{usergroup}}"
+zookeeper_user: "{{username}}"
+zookeeper_java_opts: "-Xmx1000m -Xms1000m"
+  #java_opts: "-Xmx{{ (ansible_memtotal_mb / 2) | int }}m -Xms{{ (ansible_memtotal_mb / 2) | int }}m"
+  # note this is for application logs, not the actual zookeeper data logs
+zookeeper_log_level: WARN
+zookeeper_maxClientCnxns: 3000

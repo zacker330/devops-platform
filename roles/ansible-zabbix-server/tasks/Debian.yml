@@ -1,0 +1,90 @@
+---
+
+- name: "Debian | Set some facts"
+  set_fact:
+    datafiles_path: /usr/share/zabbix-server-{{ database_type }}
+  when:
+    - zabbix_version | version_compare('3.0', '<')
+  tags:
+    - zabbix-server
+    - init
+    - config
+
+- name: "Debian | Set some facts for Zabbix 3.0"
+  set_fact:
+    datafiles_path: /usr/share/doc/zabbix-server-{{ database_type }}
+  when:
+    - zabbix_version | version_compare('3.0', '>=')
+  tags:
+    - zabbix-server
+    - init
+    - config
+
+- name: "Debian | Installing repository {{ ansible_distribution }}"
+  apt_repository:
+    repo: "{{ item }} http://repo.zabbix.com/zabbix/{{ zabbix_version }}/{{ ansible_distribution.lower() }}/ {{ ansible_distribution_release }} main"
+    state: present
+  when:
+    - zabbix_repo == "zabbix"
+  with_items:
+    - deb-src
+    - deb
+  tags:
+    - zabbix-server
+    - init
+    - config
+
+- name: "Debian | Install gpg key"
+  apt_key:
+    id: 79EA5ED4
+    url: http://repo.zabbix.com/zabbix-official-repo.key
+  when:
+    - zabbix_repo == "zabbix"
+  tags:
+    - zabbix-server
+    - init
+    - config
+
+- name: "Debian | Installing zabbix-server-{{ database_type }}"
+  apt:
+    pkg: zabbix-server-{{ database_type }}
+    state: present
+    update_cache: yes
+  tags:
+    - zabbix-server
+    - init
+
+- name: "Debian | Install Ansible module dependencies"
+  apt:
+    name: python-psycopg2
+    state: present
+  when:
+    - zabbix_database_creation
+  tags:
+    - zabbix-server
+    - init
+
+- name: "Debian | Install Mysql Client package"
+  apt:
+    name: "{{ item }}"
+    state: present
+  with_items:
+    - mysql-client
+    - python-mysqldb
+  when:
+    - database_type == 'mysql'
+  tags:
+    - zabbix-server
+    - init
+    - database
+
+- name: "Debian | Install PostgreSQL Client package"
+  apt:
+    name: postgresql-client
+    state: present
+  when:
+    - database_type == 'pgsql'
+  tags:
+    - zabbix-server
+    - init
+    - database

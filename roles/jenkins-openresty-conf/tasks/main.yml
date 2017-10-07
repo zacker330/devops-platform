@@ -1,0 +1,12 @@
+---
+- name: template jenkins.conf
+  template:
+    src: jenkins.conf
+    dest: "{{nginx_servers_conf_path}}/"
+    owner: root
+    group: root
+    mode: "u=rxw,og=rx"
+    force: true
+  tags:
+    - jenkins_openresty_conf
+  notify: restart nginx

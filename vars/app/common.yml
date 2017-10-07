@@ -1,0 +1,17 @@
+---
+nginx_conf_path: /usr/local/nginx/nginx/conf
+nginx_stream_conf_path: "{{nginx_conf_path}}/streams"
+nginx_servers_path: /usr/local/nginx/nginx/conf/servers
+nginx_user: www
+nginx_group: www
+delegated_nginx_host: nginx
+zabbix_version: 3.2.7
+zabbix_major_version: 3.2
+
+
+mysql_home: /usr/local/mysql
+mysql_cnf_path: /etc/my.cnf
+mysql_data_dir: "{{mysql_home}}/data/opendata"
+mysql_pid_file_path: "{{mysql_data_dir}}/mysqld.pid"
+mysql_tmp_dir: "{{mysql_home}}/data/opendata/tmp"
+mysql_login_unix_socket: "{{ mysql_tmp_dir }}/mysqld.sock"

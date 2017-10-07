@@ -1,0 +1,68 @@
+---
+- name: "create zk install dir"
+  file:
+    path: "{{zk_install_dir}}"
+    state: directory
+    group: "{{zookeeper_user}}"
+    owner: "{{zookeeper_group}}"
+    mode: "ug=rwx,o=rx"
+  tags:
+    - zk
+
+- name: "Download ZooKeeper"
+  get_url:
+    dest: "/tmp/zookeeper-{{ zookeeper_version }}.tar.gz"
+    url: "http://mirrors.tuna.tsinghua.edu.cn/apache/zookeeper/zookeeper-{{ zookeeper_version }}/zookeeper-{{ zookeeper_version }}.tar.gz"
+    owner: "{{ zookeeper_user }}"
+  tags:
+    - zk
+
+- name: "Unpack Zookeeper"
+  unarchive:
+    copy: false
+    dest: "{{zk_install_dir}}"
+    src: "/tmp/zookeeper-{{ zookeeper_version }}.tar.gz"
+  tags:
+    - zk
+
+- name: "link zookeeper-{{zookeeper_version}} to {{ZK_HOME}}"
+  file:
+    src: "{{zk_install_dir}}/zookeeper-{{zookeeper_version}}"
+    dest: "{{ZK_HOME}}"
+    state: link
+    owner: "{{zookeeper_user}}"
+    group: "{{zookeeper_group}}"
+  tags:
+    - zk
+
+- name: "Create Zookeeper directories"
+  file:
+    group: "{{ zookeeper_group }}"
+    owner: "{{ zookeeper_user }}"
+    path: "{{ item }}"
+    recurse: true
+    state: directory
+    mode: "ug=rwx,o=r"
+  with_items:
+    - "{{zookeeper_bin_dir}}"
+    - "{{ zookeeper_data_dir }}"
+    - "{{ zookeeper_log_dir }}"
+    - "{{ zookeeper_tmp_dir }}"
+    - "{{ zookeeper_conf_dir }}"
+  tags:
+    - zk
+
+- name: "Create the Zookeeper systemd environment file"
+  template: src="environment.j2" dest="{{ zookeeper_conf_dir }}/environment" owner={{ zookeeper_user }} group={{ zookeeper_group }} mode=0644
+  tags:
+    - zk
+
+- name: "Create the Zookeeper systemd service file"
+  template: src="zookeeper.service.j2" dest=/etc/systemd/system/{{zookeeper_service_name}}.service owner={{ zookeeper_user }} group={{zookeeper_group}} mode="ug=rwx,o=rx"
+  tags:
+    - zk
+
+- name: reload systemctl daemon
+  command: systemctl daemon-reload
+  tags:
+    - zk

@@ -1,0 +1,24 @@
+---
+# defaults file for mysql-deploy
+mysql_version: 5.6.19
+mysql_home: /usr/local/mysql
+mysql_cnf_path: /etc/my.cnf
+mysql_data_dir: "{{mysql_home}}/data/opendata"
+mysql_pid_file_path: "{{mysql_data_dir}}/mysqld.pid"
+mysql_tmp_dir: "{{mysql_home}}/data/opendata/tmp"
+mysql_logbin_dir: "{{mysql_home}}/data/opendata/binlogs"
+mysql_log_dir: "{{mysql_home}}/data/logs"
+innodb_mysql_log_dir: "{{mysql_home}}/data/logs/open_innodb_logs"
+mysql_bin_dir: "{{mysql_home}}/bin"
+mysql_port: 3307
+mysql_user: mysql
+mysql_group: mysql
+mysql_client_socket_path:
+mysql_root_username: root
+mysql_root_password: mysqlrootpa2s
+
+
+
+
+mysql_login_unix_socket: "{{ mysql_tmp_dir }}/mysqld.sock"
+ansible_mysql_src_package_path: "mysql-{{mysql_version}}.tar.gz"

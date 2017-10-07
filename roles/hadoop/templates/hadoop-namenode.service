@@ -1,0 +1,18 @@
+[Unit]
+Description=dfs
+
+[Service]
+Type=simple
+User={{hadoop_user}}
+Group={{hadoop_group}}
+Restart=on-failure
+Environment=JAVA_HOME={{JAVA_HOME}}
+Environment=HADOOP_HOME={{ hadoop_home }}
+WorkingDirectory={{hadoop_home}}
+ExecStop="/bin/sh {{ hadoop_home }}/sbin/hadoop-daemon.sh  --script hdfs stop namenode"
+ExecStart="/bin/sh {{ hadoop_home }}/sbin/hadoop-daemon.sh  --script hdfs start namenode"
+PIDFile=/tmp/hadoop-dfs.pid
+TimeoutStartSec=2min
+
+[Install]
+WantedBy=multi-user.target

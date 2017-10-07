@@ -1,0 +1,46 @@
+---
+# defaults file for pinpoint-collector-ansible
+pinpoint_version: 1.6.2
+pinpoint_zookeeper: "{{zookeeper_hosts[0]}}:{{zookeeper_client_port}}"
+
+
+pinpoint_collector_war_name: "pinpoint-collector-{{pinpoint_version}}.war"
+pinpoint_collector_download_url: "https://github.com/naver/pinpoint/releases/download/{{pinpoint_version}}/{{pinpoint_collector_war_name}}"
+pinpoint_collector_home: /app/pinpoint-collector
+pinpoint_collector_path: "/app/pinpoint-collector-{{pinpoint_version}}"
+pinpoint_collector_services_name: pinpoint-collector
+pinpoint_collector_war_unzip_folder: "{{pinpoint_collector_home}}/webapps/ROOT"
+pinpoint_collector_catalina_port: 6854
+pinpoint_collector_server_port: 8004
+
+pinpoint_web_war_name:  "pinpoint-web-{{pinpoint_version}}.war"
+pinpoint_web_download_url: "https://github.com/naver/pinpoint/releases/download/{{pinpoint_version}}/{{pinpoint_web_war_name}}"
+pinpoint_web_home: /app/pinpoint-web
+pinpoint_web_path: "/app/pinpoint-web-{{pinpoint_version}}"
+pinpoint_web_services_name: pinpoint-web
+pinpoint_web_catalina_port: 6855
+pinpoint_web_server_port: 8005
+pinpint_web_admin_password: "asdfap1j2113"
+pinpoint_web_war_unzip_folder: "{{pinpoint_web_home}}/webapps/ROOT"
+
+
+
+tomcat_version: "8.5.14"
+tomcat_file: "apache-tomcat-{{ tomcat_version }}.tar.gz"
+tomcat_path: "/app/apache-tomcat-{{ tomcat_version }}"
+# tomcat_file_path: "{{ software_files_path }}/{{ tomcat_file }}"
+tomcat_file_url: "http://archive.apache.org/dist/tomcat/tomcat-8/v{{ tomcat_version }}/bin/apache-tomcat-{{ tomcat_version }}.tar.gz"
+
+tomcat_catalina_opts: "-server -Xms1024m -Xmx1024m -Dfile.encoding=UTF-8 -Dsun.jnu.encoding=UTF-8 -Djava.awt.headless=true"
+
+
+tomcat_ajp_active: false
+tomcat_hostname: localhost
+tomcat_user: tomcat
+tomcat_group: tomcat
+tomcat_server_port: 8005
+tomcat_catalina_port: 8080
+tomcat_catalina_ajp_port: 8009
+tomcat_catalina_redirect_port: 8443
+tomcat_unpackWARs: true
+tomcat_autoDeploy: true

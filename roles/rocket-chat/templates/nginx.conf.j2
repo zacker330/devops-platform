@@ -1,0 +1,41 @@
+user {{ rocket_chat_nginx_process_user }};
+worker_processes auto;
+error_log /var/log/nginx/error.log;
+pid /run/nginx.pid;
+
+events {
+    worker_connections 1024;
+}
+
+http {
+    log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+                      '$status $body_bytes_sent "$http_referer" '
+                      '"$http_user_agent" "$http_x_forwarded_for"';
+
+    access_log  /var/log/nginx/access.log  main;
+
+    sendfile            on;
+    tcp_nopush          on;
+    tcp_nodelay         on;
+    keepalive_timeout   65;
+    types_hash_max_size 2048;
+
+    include             /etc/nginx/mime.types;
+    default_type        application/octet-stream;
+
+    gzip on;
+    gzip_vary on;
+    gzip_http_version 1.1;
+    gzip_comp_level 9;
+    gzip_proxied any;
+    gzip_min_length 1024;
+    gzip_buffers 16 8k;
+    gzip_types text/plain text/css text/javascript application/x-javascript application/xml text/xml application/json application/javascript application/xml+rss text/x-js;
+    gzip_disable "MSIE [1-6].(?!.*SV1)";
+    gzip_static on;
+
+    # Load modular configuration files from the /etc/nginx/conf.d directory.
+    # See http://nginx.org/en/docs/ngx_core_module.html#include
+    # for more information.
+    include /etc/nginx/conf.d/*.conf;
+}

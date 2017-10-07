@@ -1,0 +1,101 @@
+---
+- name: Create mongodb group.
+  group: name={{ mongodb_user }}
+  tags:
+    - mongodb
+
+- name: Create mongodb user.
+  user: name={{ mongodb_user }} group={{ mongodb_user }}
+  tags:
+    - mongodb
+
+- name: Download mongodb file.
+  get_url: url={{ mongodb_file_url }} dest={{ mongodb_file_path }} owner={{mongodb_user}} group={{mongodb_user}}
+  tags:
+    - mongodb
+
+- name: Copy mongodb file to agent.
+  unarchive:
+    remote_src: true
+    src: "{{ mongodb_file_path }}"
+    dest: "{{mongodb_install_dir}}"
+    owner: "{{mongodb_user}}"
+    group: "{{mongodb_user}}"
+  tags:
+    - mongodb
+
+- name: Check if mongodb remote soft link is already configured.
+  stat: path="{{mongodb_install_dir}}/mongodb"
+  register: mongodb_soft_link_result
+  tags:
+    - mongodb
+
+- name: Create mongodb dir soft link.
+  file: "src={{ mongodb_install_dir }}/mongodb-linux-x86_64-rhel62-{{ mongodb_version }} dest={{mongodb_home_dir}} state=link"
+  when: not mongodb_soft_link_result.stat.exists
+  tags:
+    - mongodb
+
+- name: Config environment variable.
+  lineinfile: dest=/etc/profile line='export PATH={{mongodb_install_dir}}/mongodb/bin/:$PATH'
+  run_once: yes
+  tags:
+    - mongodb
+
+- name: Set transparent_hugepage to never.
+  command: "echo never > {{ item }}"
+  with_items:
+   - /sys/kernel/mm/redhat_transparent_hugepage/enabled
+   - /sys/kernel/mm/redhat_transparent_hugepage/defrag
+  run_once: yes
+  tags:
+    - mongodb
+
+- name: Create mongodb Directory.
+  file: path={{ item }} state=directory owner={{ mongodb_user }} group={{ mongodb_user }} mode="ug=rwx,o=rx"
+  with_items:
+   - "{{ mongodb_dbpath }}"
+   - "{{mongodb_data_path}}"
+   - "{{mongodb_dir_path}}"
+   - "{{ mongodb_dir_path }}/logs"
+  tags:
+    - mongodb
+
+- name: Ensure mongodb is configured.
+  template:
+    src: mongod.conf.j2
+    dest: "{{mongodb_conf}}"
+    mode: 0644
+    owner: "{{ mongodb_user }}"
+    group: "{{ mongodb_user }}"
+  tags:
+    - mongodb
+
+- name: Add mongodb services.
+  template:
+    src: "mongod.service"
+    dest: "/etc/systemd/system"
+    mode: "ug=rwx,o=rx"
+    owner: "{{ mongodb_user }}"
+    group: "{{ mongodb_user }}"
+  tags:
+    - mongodb
+
+- name: reload systemd
+  shell: systemctl daemon-reload
+  tags:
+    - mongodb
+
+- name: Ensure mongodb is running and enabled on boot.
+  service: "name=mongod state=restarted enabled=yes"
+  tags:
+    - mongodb
+
+# - block:
+#   - name: copy repset js to agent.
+#     template: src=repset.js.j2 dest=/tmp/ansible_mongodb_repset.js
+#
+#   - name: Config repset.
+#     shell: "/usr/local/mongodb/bin/mongo --port {{ mongodb_port }} admin < /tmp/ansible_mongodb_repset.js"
+#   when: mongodb_replSet and mongodb_replSet_exec
+#   run_once: true

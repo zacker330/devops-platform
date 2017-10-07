@@ -1,0 +1,15 @@
+---
+
+- include: install-tomcat.yml
+
+- name: Include vars of stuff.yml into the 'stuff' variable (2.2).
+  include_vars:
+    file: collector.yml
+  when: pinpoint_server_role == 'collector'
+
+- include: install-collector.yml
+  when: pinpoint_server_role == 'collector'
+
+
+- include: install-web.yml
+  when: pinpoint_server_role == 'web'

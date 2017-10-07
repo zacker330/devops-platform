@@ -1,0 +1,32 @@
+---
+# - name: "create group if not exists"
+#   group:
+#     name: "{{kafka_group}}"
+#     state: present
+#   tags:
+#     - kafka
+#
+# - name: "check user is exists"
+#   shell: "id {{kafka_user}} >& /dev/null"
+#   register: kafka_user_exist
+#   ignore_errors: true
+#   tags:
+#     - kafka
+#
+# - name: "create user if not exists"
+#   user:
+#     name: "{{kafka_user}}"
+#     group: "{{kafka_group}}"
+#   when: kafka_user_exist != 0
+#   tags:
+#     - kafka
+
+- name: Install kafka
+  include: build.yml
+  tags:
+    - kafka
+
+- name: Install kafka
+  include: configure.yml
+  tags:
+    - kafka

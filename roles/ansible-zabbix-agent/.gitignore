@@ -1,0 +1,10 @@
+.idea
+.molecule
+tests/.cache
+.cache
+__pycache__
+*.retry
+
+.env
+.virtualenv
+*.pyc

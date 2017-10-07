@@ -1,0 +1,202 @@
+---
+###################################################################
+### jenkins
+jenkins_user: jenkins
+jenkins_group: jenkins
+
+jenkins_admin_username: admin
+jenkins_admin_password: admin
+jenkins_agent_username: "{{jenkins_admin_username}}"
+jenkins_agent_password: "{{jenkins_admin_password}}"
+jenkins_agent_master: 192.168.61.11
+jenkins_agent_master_port: "8666/jenkins"
+firewall_status: stopped
+
+
+
+username: digtal
+usergroup: digtal
+
+
+use_ali_oss: false
+
+
+JAVA_JAR_OPS: -Xms512m -Xmx512m
+JAVA_HOME: /app/jdk1.8
+firewasll_status: stopped
+
+
+firewall_allowed_tcp_ports:
+  - 22
+
+
+
+
+
+kafka_offsetmonitor_ip: 192.168.26.12
+kafka_offsetmonitor_webui_port: 19984
+
+
+
+kafka_heap_opts: "-Xmx1000m -Xms200m"
+kafka_brokerport: 9092
+
+
+elastic_job_lite_console_ip: 192.168.26.15
+elastic_job_lite_console_port: 9683
+
+
+###########################################################################
+### zookeeper
+zookeeper_java_opts: "-Xmx1000m -Xms200m"
+zookeeper_client_port: 2181
+zk1_host: 192.168.61.11
+zk2_host: 192.168.61.12
+zk3_host: 192.168.61.13
+
+zookeeper_hosts:
+  - "{{zk1_host}}"
+  - "{{zk2_host}}"
+  - "{{zk3_host}}"
+
+zookeeper_hosts_port_array:
+  - "{{zk1_host}}:{{zookeeper_client_port}}"
+  - "{{zk2_host}}:{{zookeeper_client_port}}"
+  - "{{zk3_host}}:{{zookeeper_client_port}}"
+
+
+## hadoop
+hadoop_version: 2.6.5
+hadoop_namenode_ip: 192.168.61.11
+hadoopnamenode_port: 8020
+hadoop_namenode_hostname: hadoopnamenode
+HADOOP_HEAPSIZE: 1000
+hadoop_user: hadoop
+hadoop_group: hadoop
+hadoop_user_home: "/home/{{hadoop_user}}"
+hadoop_home: "{{hadoop_user_home}}/hadoop"
+hadoopdatanode_hostnames:
+  - hostname: hadoopdatanode1
+    ip: 192.168.61.12
+  - hostname: hadoopdatanode2
+    ip: 192.168.61.13
+
+### hbase
+hbase_master_ip: 192.168.61.11
+hbase_master_port: 16000
+hbase_backup_masters: 192.168.61.12
+hbase_user: hbase
+hbase_group: hbase
+hbase_user_home: "/home/{{hbase_user}}"
+hbase_home: "{{hbase_user_home}}/hbase"
+hbase_regionservers:
+  - hostname: hbase_regionserver1
+    ip: 192.168.61.12
+  - hostname: hbase_regionserver2
+    ip: 192.168.61.13
+
+###############################################################
+### pinpoint
+pintpoint_work_path: "/app/pinpoint-collector"
+
+
+
+
+############################################################
+####  nginx
+delegated_nginx_host: "192.168.61.14"
+
+
+############################################################
+####  mongodb
+mongodb_server_ip: 192.168.61.15
+mongodb_server_port: 27017
+# mongodb_repl_lines: >-
+#   replication:
+#       replSetName:  "001-rs"
+
+
+##############################################################
+### rocket-chat
+rocket_chat_nginx_listen_host: 192.168.61.14
+rocket_chat_nginx_listen_port: 3000
+rocket_chat_mongodb_server: "{{mongodb_server_ip}}"
+rocket_chat_mongodb_port: "{{mongodb_server_port}}"
+rocket_chat_service_host: "192.168.61.15"
+rocket_chat_service_port: "5856"
+rocket_chat_domain_service_host: "192.168.61.15"
+rocketchat_hubot_username: rocket.cat
+rocketchat_hubot_password: 123456
+############################################################
+####  mysql
+mysql_server_ip: 192.168.61.16
+mysql_user: mysql
+mysql_group: mysql
+mysql_port: 3307
+mysql_root_username: root
+mysql_root_password: mysqlrootpa2s
+mysql_default_username: mmroot
+mysql_default_password: mmroota331nnh1
+mysql_login_unix_socket: "{{ mysql_tmp_dir }}/mysqld.sock"
+mysql_users:
+  - username: "{{zabbix_server_dbuser}}"
+    password: "{{zabbix_server_dbpassword}}"
+    host: "%"
+    priv: "{{zabbix_server_dbname}}.*:ALL,GRANT"
+    append_privs: true
+    host_all: true
+  - username: "{{zabbix_server_dbuser}}"
+    password: "{{zabbix_server_dbpassword}}"
+    host: "localhost"
+    priv: "{{zabbix_server_dbname}}.*:ALL,GRANT"
+    append_privs: true
+    host_all: true
+  - username: "{{zabbix_server_dbuser}}"
+    password: "{{zabbix_server_dbpassword}}"
+    host: "127.0.0.1"
+    priv: "{{zabbix_server_dbname}}.*:ALL,GRANT"
+    append_privs: true
+    host_all: true
+  - username: "{{zabbix_server_dbuser}}"
+    password: "{{zabbix_server_dbpassword}}"
+    host: "192_168_61_14"
+    priv: "{{zabbix_server_dbname}}.*:ALL,GRANT"
+    append_privs: true
+    host_all: true
+  - username: "{{zabbix_server_dbuser}}"
+    password: "{{zabbix_server_dbpassword}}"
+    host: "192.168.61.14"
+    priv: "{{zabbix_server_dbname}}.*:ALL,GRANT"
+    append_privs: true
+    host_all: true
+  - username: "{{mysql_default_username}}"
+    password: "{{mysql_default_password}}"
+    host: "%"
+    priv: "*.*:ALL,GRANT"
+    append_privs: true
+    host_all: true
+  - username: "{{mysql_default_username}}"
+    password: "{{mysql_default_password}}"
+    host: "localhost"
+    priv: "*.*:ALL,GRANT"
+    append_privs: true
+    host_all: true
+
+
+###############################################################
+### zabbix-server
+zabbix_server_dbhost: "{{mysql_server_ip}}"
+zabbix_server_dbname: zabbix-server
+zabbix_server_dbencoding: utf8
+zabbix_server_dbcollation: utf8_bin
+zabbix_server_dbschema:
+zabbix_server_dbuser: "zabbix"
+zabbix_server_dbpassword: "zabbix"
+zabbix_server_dbport: "{{mysql_port}}"
+zabbix_server_ip: 192.168.61.14
+zabbix_front_ip: 192.168.61.14
+zabbix_front_port: 8542
+zabbix_api_user: Admin
+zabbix_api_pass: zabbix
+zabbix_url: "http://{{zabbix_front_ip}}:{{zabbix_front_port}}"
+zabbix_delegated_dbhost: "192.168.61.16"

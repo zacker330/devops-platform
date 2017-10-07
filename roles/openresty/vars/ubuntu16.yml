@@ -1,0 +1,7 @@
+---
+packages:
+    - "libreadline-dev"
+    - "libpcre3-dev"
+    - "libssl-dev"
+    - "perl"
+    - "build-essential"

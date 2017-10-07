@@ -1,0 +1,60 @@
+##
+# {{ ansible_managed }}
+
+log4j.rootLogger={{ kafka_log_level }}, stdout
+
+log4j.appender.stdout=org.apache.log4j.ConsoleAppender
+log4j.appender.stdout.layout=org.apache.log4j.PatternLayout
+log4j.appender.stdout.layout.ConversionPattern=[%d] %p %m (%c)%n
+
+log4j.appender.kafkaAppender=org.apache.log4j.RollingFileAppender
+log4j.appender.kafkaAppender.MaxFileSize=50MB
+log4j.appender.kafkaAppender.MaxBackupIndex=4
+log4j.appender.kafkaAppender.File={{ kafka_log_dir }}/server.log
+log4j.appender.kafkaAppender.layout=org.apache.log4j.PatternLayout
+log4j.appender.kafkaAppender.layout.ConversionPattern=[%d] %p %m (%c)%n
+
+log4j.appender.stateChangeAppender=org.apache.log4j.RollingFileAppender
+log4j.appender.stateChangeAppender.MaxFileSize=50MB
+log4j.appender.stateChangeAppender.MaxBackupIndex=4
+log4j.appender.stateChangeAppender.File={{ kafka_log_dir }}/state-change.log
+log4j.appender.stateChangeAppender.layout=org.apache.log4j.PatternLayout
+log4j.appender.stateChangeAppender.layout.ConversionPattern=[%d] %p %m (%c)%n
+
+log4j.appender.controllerAppender=org.apache.log4j.RollingFileAppender
+log4j.appender.controllerAppender.MaxFileSize=50MB
+log4j.appender.controllerAppender.MaxBackupIndex=4
+log4j.appender.controllerAppender.File={{ kafka_log_dir }}/controller.log
+log4j.appender.controllerAppender.layout=org.apache.log4j.PatternLayout
+log4j.appender.controllerAppender.layout.ConversionPattern=[%d] %p %m (%c)%n
+
+# Turn on all our debugging info
+#log4j.logger.kafka_producer.async.DefaultEventHandler=DEBUG, kafkaAppender
+#log4j.logger.kafka_client.ClientUtils=DEBUG, kafkaAppender
+#log4j.logger.kafka_perf=DEBUG, kafkaAppender
+#log4j.logger.kafka_perf.ProducerPerformance$ProducerThread=DEBUG, kafkaAppender
+#log4j.logger.org.I0Itec.zkclient.ZkClient=DEBUG
+log4j.logger.kafka={{ kafka_log_level }}, kafkaAppender
+
+# Tracing requests results in large logs
+#log4j.appender.requestAppender=org.apache.log4j.RollingFileAppender
+#log4j.appender.requestAppender.MaxFileSize=50MB
+#log4j.appender.requestAppender.MaxBackupIndex=4
+#log4j.appender.requestAppender.File={{ kafka_log_dir }}/kafka-request.log
+#log4j.appender.requestAppender.layout=org.apache.log4j.PatternLayout
+#log4j.appender.requestAppender.layout.ConversionPattern=[%d] %p %m (%c)%n
+#
+#log4j.logger.kafka_network.RequestChannel$=TRACE, requestAppender
+#log4j.additivity.kafka_network.RequestChannel$=false
+#
+#log4j.logger.kafka_network.Processor=TRACE, requestAppender
+#log4j.logger.kafka_server.KafkaApis=TRACE, requestAppender
+#log4j.additivity.kafka_server.KafkaApis=false
+#log4j.logger.kafka_request.logger=TRACE, requestAppender
+#log4j.additivity.kafka_request.logger=false
+
+log4j.logger.kafka_controller=TRACE, controllerAppender
+log4j.additivity.kafka_controller=false
+
+log4j.logger.state.change.logger=TRACE, stateChangeAppender
+log4j.additivity.state.change.logger=false

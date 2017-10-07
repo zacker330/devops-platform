@@ -1,0 +1,10 @@
+---
+- name: restart mongod
+  service: name=mongod state=restarted
+  tags:
+    - mongodb
+
+- name: start mongod
+  service: name=mongod state=started
+  tags:
+    - mongodb

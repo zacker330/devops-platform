@@ -1,0 +1,64 @@
+---
+- name: Ensure iptables is installed.
+  yum: name=iptables state=installed
+  tags:
+    - firewall
+
+- name: Flush iptables the first time playbook runs.
+  command: /usr/sbin/iptables -F
+  tags:
+    - firewall
+
+
+    # creates=/etc/init.d/firewall
+
+- name: Copy firewall script into place.
+  template:
+    src: firewall.bash.j2
+    dest: /etc/firewall.bash
+    owner: root
+    group: root
+    mode: 0744
+  notify: restart firewall
+  tags:
+    - firewall
+
+
+- name: Copy firewall init script into place.
+  template:
+    src: firewall.init.j2
+    dest: /etc/init.d/firewall
+    owner: root
+    group: root
+    mode: 0755
+  tags:
+    - firewall
+
+
+- name: Copy firewall systemd unit file into place (for systemd systems).
+  template:
+    src: firewall.unit.j2
+    dest: /etc/systemd/system/firewall.service
+    owner: root
+    group: root
+    mode: 0644
+  tags:
+    - firewall
+
+
+
+- name: Ensure the firewall is enabled and will start on boot.
+  service: name=firewall state={{firewall_status}} enabled=yes
+  tags:
+    - firewall
+
+
+- include: disable-other-firewalls.yml
+  when: firewall_disable_firewalld or firewall_disable_ufw
+  tags:
+    - firewall
+
+
+- meta: flush_handlers
+  tags:
+    - firewall

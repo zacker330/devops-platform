@@ -1,0 +1,48 @@
+---
+- stat: path="{{tomcat_home}}"
+  register: tomcat_home_folder
+
+- name: download tomcat {{tomcat8_download_url}}
+  get_url: url="{{tomcat8_download_url}}" dest="/tmp" owner={{ user }} group={{ user_group }}
+  when: tomcat_home_folder.stat.exists == False
+  tags:
+    - install
+
+- name: mkdir log path
+  file: path="{{log_path}}" owner="{{user}}" group="{{user_group}}" state=directory
+
+- name: install tomcat
+  unarchive: src="/tmp/{{apache_tomcat8_version}}.tar.gz" dest="/usr/local/" creates=yes mode="go-w" copy=no
+  when: tomcat_home_folder.stat.exists == False
+  tags:
+    - install
+
+- stat: path="{{tomcat_home}}"
+  register: tomcat_home_folder
+
+- command: mv /usr/local/{{apache_tomcat8_version}} {{tomcat_home}}
+  when: tomcat_home_folder.stat.exists == False
+  tags:
+    - install
+
+
+- file: path="{{tomcat_home}}" owner={{user}} group={{user_group}} recurse=yes
+
+
+- template: src="conf/server.xml" dest="{{tomcat_home}}/conf" owner={{ user }} group={{ user_group }}
+  when: codebase is defined
+
+- template: src="conf/logging.properties" dest="{{tomcat_home}}/conf" owner={{ user }} group={{ user_group }}
+  when: codebase is defined
+
+##https
+#- name: copy certificate_key
+#  copy: src="server.crt" dest="{{tomcat_home}}/conf" owner={{ user }} group={{ user_group }} mode="777"
+#
+#- name: copy server.key.unsecure
+#- copy: src="server.key.unsecure" dest="{{tomcat_home}}/conf" owner={{ user }} group={{ user_group }} mode="777"
+
+
+- template: src="tomcat" dest="/etc/init.d/{{tomcat_service_name}}" owner={{ user }} group={{ user_group }}
+- file: dest="/etc/init.d/{{tomcat_service_name}}" state=touch mode="u=rx,g=rx,o=r" owner={{ user }} group={{ user_group }}
+- shell: "sudo update-rc.d -f {{tomcat_service_name}} defaults"

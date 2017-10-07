@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+
+
+<Server port="{{ pinpoint_web_server_port }}" >
+
+  <Listener className="org.apache.catalina.startup.VersionLoggerListener" />
+  <!-- Security listener. Documentation at /docs/config/listeners.html
+  <Listener className="org.apache.catalina.security.SecurityListener" />
+  -->
+  <!--APR library loader. Documentation at /docs/apr.html -->
+  <Listener className="org.apache.catalina.core.AprLifecycleListener" SSLEngine="on" />
+  <!-- Prevent memory leaks due to use of particular java/javax APIs-->
+  <Listener className="org.apache.catalina.core.JreMemoryLeakPreventionListener" />
+  <Listener className="org.apache.catalina.mbeans.GlobalResourcesLifecycleListener" />
+  <Listener className="org.apache.catalina.core.ThreadLocalLeakPreventionListener" />
+
+  <!-- <GlobalNamingResources>
+
+    <Resource name="UserDatabase" auth="Container"
+              type="org.apache.catalina.UserDatabase"
+              description="User database that can be updated and saved"
+              factory="org.apache.catalina.users.MemoryUserDatabaseFactory"
+              pathname="conf/tomcat-users.xml" />
+  </GlobalNamingResources> -->
+
+  <!-- A "Service" is a collection of one or more "Connectors" that share
+       a single "Container" Note:  A "Service" is not itself a "Container",
+       so you may not define subcomponents such as "Valves" at this level.
+       Documentation at /docs/config/service.html
+   -->
+  <Service name="Catalina">
+
+    <!--The connectors can use a shared executor, you can define one or more named thread pools-->
+    <!--
+    <Executor name="tomcatThreadPool" namePrefix="catalina-exec-"
+        maxThreads="150" minSpareThreads="4"/>
+    -->
+
+
+    <!-- A "Connector" represents an endpoint by which requests are received
+         and responses are returned. Documentation at :
+         Java HTTP Connector: /docs/config/http.html
+         Java AJP  Connector: /docs/config/ajp.html
+         APR (HTTP/AJP) Connector: /docs/apr.html
+         Define a non-SSL/TLS HTTP/1.1 Connector on port 8080
+    -->
+
+
+
+    <Connector port="{{ pinpoint_web_catalina_port }}" protocol="HTTP/1.1"
+               connectionTimeout="20000"
+               redirectPort="{{ tomcat_catalina_redirect_port }}"
+			   URIEncoding="UTF-8"
+			   enableLookups="false"
+			   acceptCount="5000"
+			   maxThreads="500"
+			   compression="on"
+			   compressionMinSize="2048"
+			   compressableMimeType="text/html,text/xml,text/plain,text/css,text/javascript,application/javascript"
+    />
+
+
+
+    <Engine name="Catalina" defaultHost="{{ ip }}">
+
+<!--
+      <Realm className="org.apache.catalina.realm.LockOutRealm">
+
+        <Realm className="org.apache.catalina.realm.UserDatabaseRealm"
+               resourceName="UserDatabase"/>
+      </Realm> -->
+
+      <Host name="{{ ip }}"  appBase="webapps"
+            unpackWARs="{{ tomcat_unpackWARs }} " autoDeploy="{{ tomcat_autoDeploy }}">
+        <Context path="" docBase="ROOT"/>
+        <Valve className="org.apache.catalina.valves.AccessLogValve" directory="logs"
+               prefix="localhost_access_log" suffix=".txt"
+               pattern="%h %l %u %t &quot;%r&quot; %s %b" />
+
+      </Host>
+    </Engine>
+  </Service>
+</Server>

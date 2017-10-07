@@ -1,0 +1,10 @@
+---
+# handlers file for mysql-role-ansible
+- name: restart mysqld
+  service:
+    name: mysqld
+    state: restarted
+    # enable: true
+  tags:
+    - mysql
+    - start_mysql

@@ -1,0 +1,116 @@
+---
+# tasks file for jenkins-agent
+- group: name={{jenkins_group}} system=yes
+  tags:
+    - jenkins
+
+- user: name={{jenkins_user}} group={{jenkins_group}} system=yes
+  tags:
+    - jenkins
+
+- name: Ensure dependencies are installed.
+  package:
+    name: "{{item}}"
+    state: installed
+  with_items:
+    - curl
+    - python-pip
+    - python-devel
+  tags:
+    - jenkins
+
+- name: Add repository
+  yum_repository:
+    name: epel
+    description: EPEL YUM repo
+    baseurl: https://download.fedoraproject.org/pub/epel/$releasever/$basearch/
+
+- name: "mkdir jenkins tool dir {{jenkinstool_path}}"
+  file:
+    state: directory
+    path: "{{jenkinstool_path}}"
+    owner: "{{jenkins_user}}"
+    group: "{{jenkins_group}}"
+
+# - name: "mkdir jenkins tool dir {{jenkins_zips_saved_path}}"
+#   file:
+#     state: directory
+#     path: "{{jenkins_zips_saved_path}}"
+#     owner: "{{jenkins_user}}"
+#     group: "{{jenkins_group}}"
+
+# - name: install git
+#   yum:
+#     name: git
+#     state: present
+#     validate_certs: no
+#
+# - name: install ansible
+#   yum:
+#     name: ansible
+#     state: present
+#     validate_certs: no
+
+
+- name: Copy the Swarm startup script into init.d
+  copy:
+    src: swarmclient
+    dest: "/etc/init.d/{{ jenkins_swarm_service_name }}"
+    mode: "ug=rwx,o=rx"
+    owner: jenkins
+    group: jenkins
+  notify:
+    - Reload Systemd
+    - Restart Swarm Client service
+  become: true
+
+- name: Create Swarm directory
+  file:
+    path: "{{ jenkins_swarm_path }}"
+    state: directory
+    owner: jenkins
+    group: jenkins
+    mode: "ug=rwx,o=rx"
+  become: true
+
+- name: Download the Jenkins Swarm Client
+  get_url:
+    url: "{{ jenkins_swarm_download_url }}"
+    dest: "{{ jenkins_swarm_path }}"
+    owner: jenkins
+    group: jenkins
+  become: true
+  notify:
+    - Restart Swarm Client service
+  register: swarm_jar
+
+- name: Create the Jenkins Swarm Client config directory
+  file:
+    path: "{{ jenkins_swarm_config_path }}"
+    state: directory
+    owner: jenkins
+    group: jenkins
+    mode: "ug=rwx,o=rx"
+  tags:
+    - configuration
+  become: true
+
+- name: Create the Jenkins Swarm Client config file
+  template:
+    src: swarm-client-linux.j2
+    dest: "{{ jenkins_swarm_config_path }}/swarm-client"
+    owner: jenkins
+    group: jenkins
+    mode: "ug=rwx,o=rx"
+  tags:
+    - configuration
+  notify:
+    - Restart Swarm Client service
+  become: true
+#
+#
+# - name: install maven
+#
+
+#
+# - name: install python-pip && oss2

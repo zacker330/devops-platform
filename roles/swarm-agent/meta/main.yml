@@ -1,0 +1,25 @@
+---
+
+galaxy_info:
+  author: Nic Patterson & Chris O'Brian
+  description: Provision a Jenkins agent
+  company: Concur
+  license: BSD
+  min_ansible_version: 2.2
+  platforms:
+    - name: EL
+      versions:
+      - 6
+      - 7
+    - name: Debian
+      versions:
+      - jessie
+      - wheezy
+    - name: Ubuntu
+      versions:
+      - xenial
+      - yakkety
+  galaxy_tags:
+    - development
+    - system
+    - jenkins

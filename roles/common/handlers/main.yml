@@ -1,0 +1,25 @@
+---
+# handlers file for common
+- name: add host to zabbix-server
+  zabbix_host:
+    server_url: http://{{zabbix_front_ip}}:{{zabbix_front_port}}
+    login_user: Admin
+    login_password: zabbix
+    host_name: "{{innerip}}"
+    visible_name: "{{innerip}}"
+    host_groups:
+      - Linux servers
+    link_templates:
+      - Template OS Linux
+      - Template ICMP Ping
+    status: enabled
+    state: present
+    force: false
+    inventory_mode: automatic
+    interfaces:
+      - type: 1
+        main: 1
+        useip: 1
+        ip: "{{innerip}}"
+        dns: ""
+        port: 10050

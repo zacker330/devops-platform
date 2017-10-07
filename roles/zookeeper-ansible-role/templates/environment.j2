@@ -1,0 +1,21 @@
+
+# Modified from http://packages.ubuntu.com/saucy/zookeeperd
+NAME=zookeeper
+ZOOKEEPER_HOME={{ zk_install_dir }}
+ZOOCFGDIR={{ zookeeper_conf_dir }}
+ZOODIR={{ zk_install_dir }}
+
+CLASSPATH="$ZOOCFGDIR:$ZOODIR/zookeeper-{{ zookeeper_version }}.jar:{{ zookeeper_classpath | default('$ZOODIR/lib/*') }}"
+
+ZOOCFG="$ZOOCFGDIR/zoo.cfg"
+ZOO_LOG_DIR={{ zookeeper_log_dir }}
+USER=$NAME
+GROUP=$NAME
+PIDDIR=/var/run/$NAME
+PIDFILE=$PIDDIR/$NAME.pid
+SCRIPTNAME=/etc/init.d/$NAME
+JAVA="{{JAVA_HOME}}/bin/java"
+ZOOMAIN="org.apache.zookeeper_server.quorum.QuorumPeerMain"
+ZOO_LOG4J_PROP="INFO,ROLLINGFILE"
+JMXLOCALONLY=false
+JAVA_OPTS="{{ zookeeper_java_opts | default() }}"

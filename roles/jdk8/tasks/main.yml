@@ -1,0 +1,45 @@
+---
+- stat: path="/usr/lib/jvm/{{jdk8_version_name}}/bin/java"
+  register: jvm
+  tags:
+    - jdk
+
+- name: copy jdk
+  copy: src="{{jdk8_path}}" dest="/tmp"
+  tags:
+    - jdk
+
+- name: mkdir for Java
+  file: path="/usr/lib/jvm/" state=directory  mode="u=rwx,go=rx"
+  tags:
+    - jdk
+
+- name: install JDK
+  unarchive: src="/tmp/{{jdk8_path}}" dest="/usr/lib/jvm/" mode="go-w" remote_src=yes
+  tags:
+    - jdk
+
+- name: "{{JAVA_HOME}} -> /usr/lib/jvm/{{jdk8_version_name}}"
+  file: src="/usr/lib/jvm/{{jdk8_version_name}}" dest="{{JAVA_HOME}}"  state=link
+  tags:
+    - jdk
+
+- name: set JAVA_HOME
+  lineinfile: dest='/etc/profile' line='export JAVA_HOME={{JAVA_HOME}}' state=present
+  tags:
+    - jdk
+
+- file: src="/usr/lib/jvm/{{jdk8_version_name}}" dest="{{item}}"  state=link
+  with_items: "{{JAVA_HOME_alias}}"
+  tags:
+    - jdk
+
+
+
+- lineinfile: dest='/etc/profile' line='export CLASSPATH=.:$JAVA_HOME/lib/dt.jar:$JAVA_HOME/lib/tools.jar' state=present
+  tags:
+    - jdk
+
+- lineinfile: dest='/etc/profile' line='export PATH="$PATH:$JAVA_HOME/bin"' state=present
+  tags:
+    - jdk

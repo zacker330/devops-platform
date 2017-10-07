@@ -1,0 +1,54 @@
+---
+- hosts: all
+  become: true
+  gather_facts: true
+  vars_files:
+    - "vars/app/common.yml"
+    - "vars/app/{{env}}.yml"
+  roles:
+    - common
+    - os-init
+
+- hosts: nginx
+  become: true
+  gather_facts: true
+  vars_files:
+    - "vars/app/common.yml"
+    - "vars/app/{{env}}.yml"
+  roles:
+    - {"role": openresty }
+
+
+- hosts: mongodb
+  become: true
+  gather_facts: true
+  vars_files:
+    - "vars/app/common.yml"
+    - "vars/app/{{env}}.yml"
+  roles:
+    - common
+    - {"role": "ansible-role-firewall"}
+    - {"role": ansible-role-mongodb }
+
+
+- hosts: rocketchat-server
+  become: true
+  gather_facts: true
+  vars_files:
+    - "vars/app/common.yml"
+    - "vars/app/{{env}}.yml"
+  roles:
+    - {"role": ansible-role-nodejs }
+    - {"role": rocket-chat }
+    - {"role": ansible-hubot}
+
+- hosts: jenkins
+  become: true
+  vars_files:
+    - "vars/app/common.yml"
+    - "vars/app/{{env}}.yml"
+  roles:
+    - jdk8
+    - jenkins
+    - openresty
+    - jenkins-openresty-conf

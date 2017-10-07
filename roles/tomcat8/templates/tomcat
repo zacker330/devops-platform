@@ -1,0 +1,70 @@
+#!/bin/sh
+#
+# /etc/init.d/tomcat
+#
+# This is the init script for starting up the
+#  Jakarta Tomcat server
+#
+# description: Starts and stops the Tomcat daemon.
+#
+
+export JAVA_HOME=/usr/lib/jvm/java
+export CLASSPATH=.:$JAVA_HOME/lib/dt.jar:$JAVA_HOME/lib/tools.jar
+export PATH="$PATH:$JAVA_HOME/bin"
+
+export JAVA_OPTS="$JAVA_OPTS -Duser.timezone=GMT+08"
+#export CATALINA_OPTS="-server -Xdebug -Xnoagent -Djava.compiler=NONE -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address={{tomcat_debug_port}}"
+
+# SET CATALINA_OPTS=-server -Xdebug -Xnoagent -Djava.compiler=NONE -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address={{tomcat_debug_port}}
+
+tomcat={{tomcat_home}}
+startup=$tomcat/bin/startup.sh
+shutdown=$tomcat/bin/shutdown.sh
+
+
+
+start() {
+  echo -n $"Starting Tomcat service: "
+  sh $startup
+  echo $?
+}
+
+stop() {
+  echo -n $"Stopping Tomcat service: "
+  sh $shutdown
+  echo $?
+}
+
+restart() {
+  stop
+  sleep 4
+  start
+}
+
+status() {
+   # if ! ps -ef |grep -q "{{tomcat_service_name}}.* st[a]rt"; then
+            # exit 1
+   # fi
+   ps -ef |grep -q "{{tomcat_service_name}}.* st[a]rt" && exit 0 || exit 1
+}
+
+# Handle the different input options
+case "$1" in
+start)
+  start
+  ;;
+stop)
+  stop
+  ;;
+status)
+  status
+  ;;
+restart)
+  restart
+  ;;
+*)
+  echo $"Usage: $0 {start|stop|restart|status}"
+  exit 1
+esac
+
+exit 0

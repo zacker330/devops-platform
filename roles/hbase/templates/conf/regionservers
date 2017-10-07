@@ -1,0 +1,1 @@
+{{hbase_regionservers | map(attribute='ip') | join('\n')}}

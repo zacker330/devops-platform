@@ -1,0 +1,12 @@
+---
+# defaults file for openresty
+openresty_version: openresty-1.11.2.2
+openresty_download_url: "https://openresty.org/download/{{openresty_version}}.tar.gz"
+nginx_conf_path: /usr/local/nginx/nginx/conf
+nginx_stream_conf_path: "{{nginx_conf_path}}/streams"
+nginx_servers_conf_path: "{{nginx_conf_path}}/servers"
+nginx_log_path: /var/log/nginx
+nginx_log_cut_path: /var/log/nginx/log_cut
+nginx_user: www
+nginx_group: www
+is_install_python_passlib: False

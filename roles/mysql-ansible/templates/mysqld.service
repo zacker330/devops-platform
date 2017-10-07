@@ -1,0 +1,31 @@
+[Unit]
+Description=MySQL Community Server
+After=network.target
+After=syslog.target
+
+[Install]
+WantedBy=multi-user.target
+Alias=mysql.service
+
+
+[Service]
+User={{mysql_user}}
+Group={{mysql_group}}
+
+# Execute pre and post scripts as root
+PermissionsStartOnly=true
+
+# Needed to create system tables etc.
+#ExecStartPre={{mysql_bin_dir}}/mysql-systemd-start pre
+
+# Start main service
+ExecStart={{mysql_bin_dir}}/mysqld_safe --datadir="{{mysql_data_dir}}" --pid-file="{{mysql_pid_file_path}}" -e=/etc/my.cnf
+
+# Don't signal startup success before a ping works
+#ExecStartPost=/usr/bin/mysql-systemd-start post
+
+# Give up if ping don't get an answer
+TimeoutSec=600
+
+Restart=always
+PrivateTmp=false

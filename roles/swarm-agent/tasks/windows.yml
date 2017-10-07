@@ -1,0 +1,25 @@
+---
+- name: Create Swarm directory
+  win_file:
+    path: "{{ win_base_jenkins_path }}"
+    state: directory
+
+- name: Download the Jenkins Swarm Client
+  win_get_url:
+    url: "{{ jenkins_swarm_download_url }}"
+    dest: "{{ win_swarm_client_jar_path }}"
+    force: no
+  notify: Install Jenkins as a service
+
+- name: Download the Jenkins Service Wrapper
+  win_get_url:
+    url: "{{ jenkins_swarm_wrapper_download_url }}"
+    dest: "{{ win_swarm_client_wrapper_path }}"
+    force: no
+  notify: Install Jenkins as a service
+
+- name: Create the Service Wrapper config
+  win_template:
+    src: "swarm-service.xml.j2"
+    dest: "{{ win_swarm_client_wrapper_config_path }}"
+  notify: Install Jenkins as a service

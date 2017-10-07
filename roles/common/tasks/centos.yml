@@ -1,0 +1,52 @@
+---
+- name: conf yum.conf
+  template: src="yum.conf" dest="/etc" owner="root" group="root" mode="0755"
+  tags:
+    - common
+
+- name: use ali source
+  shell: "wget -O /etc/yum.repos.d/CentOS-Base.repo http://mirrors.aliyun.com/repo/Centos-7.repo"
+  tags:
+    - common
+
+- name: yum install
+  yum:
+    name: "{{item}}"
+    update_cache: true
+  with_items:
+    - epel-release
+  tags:
+    - common
+
+- name: yum clean all and makecache
+  command: "{{item}}"
+  with_items:
+    - yum clean all
+    # - yum update -y
+    # - yum makecache
+  args:
+    warn: no
+  tags:
+    - common
+
+- name: yum install
+  yum:
+    name: "{{item}}"
+    update_cache: true
+  with_items:
+    - wget
+    - telnet
+    - unzip
+    - python-pip
+  tags:
+    - common
+
+- name: pip install
+  pip:
+    name: "{{item}}"
+  with_items:
+    - oss2
+    - passlib ## for http base auth
+    - zabbix-api ## for zabbix api
+  tags:
+    - common

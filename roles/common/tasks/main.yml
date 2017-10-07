@@ -1,0 +1,92 @@
+---
+- include: "centos.yml"
+  when: ansible_os_family == 'RedHat'
+#
+# - include: ubuntu.yml
+#   when: ansible_distribution == "Ubuntu"
+
+- name: "create group if not exists"
+  group:
+    name: "{{usergroup}}"
+    state: present
+  tags:
+    - common
+
+- name: "check user is exists"
+  shell: "id {{username}} >& /dev/null"
+  register: user_exist
+  ignore_errors: true
+  tags:
+    - common
+
+- name: "create user if not exists"
+  user:
+    name: "{{username}}"
+    group: "{{usergroup}}"
+    append: yes
+    createhome: yes
+  when: user_exist != 0
+  tags:
+    - common
+
+- stat:
+    path: /app
+  register: __app_folder
+  tags:
+    - common
+
+- name: create app folder
+  file:
+    path: /app
+    state: directory
+    owner: "{{username}}"
+    group: "{{usergroup}}"
+    mode: "ug=rwx,o=rx"
+  when: __app_folder.stat.exists == False
+  tags:
+    - common
+
+- name: add /sbin to path
+  lineinfile: dest="/etc/profile" line="{{item}}"
+  with_items:
+    - export LANG="en_US.UTF-8"
+    - export LANGUAGE="en_US:en"
+    - export LC_ALL="en_US.UTF-8"
+    - export PATH=/sbin/:$PATH
+  ignore_errors: yes
+  tags:
+    - common
+
+- hostname: name={{ innerip | regex_replace('\.', '_')  }}
+  tags:
+    - common
+
+
+- name: Delete keys in sysadmin/.ssh/authoriezd_keys
+  lineinfile:
+    dest: "/etc/hosts"
+    state: absent
+    regexp: "{{ item }}"
+  with_items:
+    - "^127.0.0.1   localhost"
+    - '^::1'
+  tags:
+    - common
+
+
+- name: update host
+  blockinfile:
+    backup: yes
+    dest: "/etc/hosts"
+    block: |
+      {{ hosts }}
+  when: hosts is defined
+  tags:
+    - common
+
+- name: hostname to /etc/hosts
+  lineinfile: dest="/etc/hosts" line="{{innerip}} {{ ansible_hostname }} localhost"
+  ignore_errors: yes
+  # notify: add host to zabbix-server
+  tags:
+    - common

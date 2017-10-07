@@ -1,0 +1,52 @@
+---
+- name: Change nofile limits.
+  lineinfile: dest=/etc/security/limits.conf line={{ item }}
+  with_items:
+    - '* - nofile 165535'
+    - '* soft nofile 165535'
+    - '* hard nofile 165535'
+  tags: limits
+
+
+- name: Shutdwon selinux.
+  replace: dest=/etc/selinux/config regexp=^SELINUX=enforcing replace=SELINUX=disabled
+  tags: selinux
+
+- block:
+  - name: Shutdown transparent hugepage.
+    shell: echo never >> /sys/kernel/mm/transparent_hugepage/enabled && echo never >>  /sys/kernel/mm/transparent_hugepage/defrag
+
+  - lineinfile: dest=/etc/rc.local line={{ item }}
+    with_items:
+     - echo never >> /sys/kernel/mm/transparent_hugepage/enabled
+     - echo never >> /sys/kernel/mm/transparent_hugepage/defrag
+  tags: hugepage
+
+- name: Ensure gcc packages are installed.
+  yum:
+    name: "{{ item }}"
+    state: installed
+  with_items:
+    - gcc
+    - gcc-c++
+    - libtool
+    - make
+    - automake
+  tags: gcc
+
+- name: Set vm.overcommit_memory to 1 in /etc/sysctl.conf.
+  sysctl:
+   name: vm.overcommit_memory
+   value: 1
+   state: present
+  tags: overcommit_memory
+
+- name: Set vm.swappiness to 1 in /etc/sysctl.conf.
+  sysctl:
+   name: vm.swappiness
+   value: 1
+   state: present
+  tags: swappiness
+
+- name : update bash
+  yum : name=bash state=latest

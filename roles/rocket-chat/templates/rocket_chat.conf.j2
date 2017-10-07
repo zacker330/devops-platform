@@ -1,0 +1,12 @@
+upstream rocket_chat {
+        server {{rocket_chat_service_host}}:{{ rocket_chat_service_port }};
+}
+server {
+        listen  {{rocket_chat_nginx_listen_port}};
+        server_name  {{ rocket_chat_nginx_listen_host }};
+
+        # tell users to go to SSL version this time
+        if ($ssl_protocol = "") {
+        rewrite     ^   https://$server_name$request_uri? permanent;
+        }
+}

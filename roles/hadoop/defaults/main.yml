@@ -1,0 +1,12 @@
+---
+# defaults file for hadoop2
+hadoop_full_version: 2.6.5
+hadoop_namenode_hostname: hadoopnamenode
+hadoop_tar_name: "hadoop-{{hadoop_full_version}}.tar.gz"
+hadoopnamenode_port: 8020
+hadoop_download_url: "http://mirrors.hust.edu.cn/apache/hadoop/common/hadoop-{{hadoop_full_version}}/{{hadoop_tar_name}}"
+hadoop_user: hadoop
+hadoop_group: hadoop
+hadoop_user_home: "/home/{{hadoop_user}}"
+hadoop_home: "{{hadoop_user_home}}/hadoop"
+hadoop_log_directory: "{{hadoop_home}}/log"

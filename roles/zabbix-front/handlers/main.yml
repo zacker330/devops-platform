@@ -1,0 +1,4 @@
+---
+- name: restart nginx
+  service: name="nginx" state="restarted"
+  delegate_to: "{{delegated_nginx_host}}"

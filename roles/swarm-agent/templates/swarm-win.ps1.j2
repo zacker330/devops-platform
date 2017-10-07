@@ -1,0 +1,14 @@
+{{ ansible_managed|comment }}
+Set-StrictMode -Version 2
+$WarningPreference='stop'
+$ErrorActionPreference='stop'
+
+javaw -jar "{{ win_swarm_client_jar_path }}" `
+  -master "http://{{ jenkins_agent_master|default('') }}:{{ jenkins_agent_master_port|default('80') }}" `
+  -name "{{ jenkins_agent_name }}" `
+  -labels "{{ jenkins_agent_labels }}" `
+  -username "{{ jenkins_agent_username }}" `
+  -password "{{ jenkins_agent_password }}" `
+  -disableClientsUniqueId `
+  -executors "{{ jenkins_agent_num_executors }}" `
+  -fsroot "C:\\jenkins"

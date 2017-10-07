@@ -1,0 +1,16 @@
+[Unit]
+Description={{redis_service_name}}
+After=network.target
+
+[Service]
+Type=Forking
+PIDFile={{redis_pidfile}}
+User={{redis_user}}
+Group={{redis_group}}
+ExecStart={{redis_home}}/bin/redis-server {{redis_conf_path}}
+ExecReload=/bin/kill -USR2 $MAINPID
+ExecStop={{redis_home}}/bin/redis-cli  -h {{redis_bind}} -p {{redis_port}} shutdown
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

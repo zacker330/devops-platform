@@ -1,0 +1,157 @@
+---
+# Variable setup.
+
+- group: name={{jenkins_group}} system=yes
+  tags:
+    - jenkins
+
+- user: name={{jenkins_user}} group={{jenkins_group}} system=yes
+  tags:
+    - jenkins
+
+- name: Ensure dependencies are installed.
+  package:
+    name: curl
+    state: installed
+  tags:
+    - jenkins
+
+
+- copy:
+    src: jenkins.war
+    dest: "{{ jenkins_home }}/jenkins.war"
+    owner: "{{ jenkins_user }}"
+    group: "{{ jenkins_group }}"
+    mode: 0766
+  ignore_errors: true  
+  tags:
+    - jenkins
+
+- stat:
+    path: "{{ jenkins_home }}/jenkins.war"
+  register: jenkins_war
+  tags:
+    - jenkins
+
+- stat:
+    path: "{{ jenkins_home }}/.first_install_jenkins_file"
+  register: first_install_jenkins_file
+  tags:
+    - jenkins
+
+- name: Download jenkins.war "{{ jenkins_war_url }}"
+  get_url:
+    url: "{{ jenkins_war_url }}"
+    dest: "{{ jenkins_home }}/jenkins.war"
+    owner: "{{ jenkins_user }}"
+    group: "{{ jenkins_group }}"
+#    sha256sum: "{{ jenkins_war_sha256sum }}"
+    mode: 0766
+  when: jenkins_war.stat.exists == False
+  tags:
+    - jenkins
+- name: create directories for jenkins
+  file:
+    path: "{{ item }}"
+    mode: 0766
+    owner: "{{ jenkins_user }}"
+    group: "{{ jenkins_group }}"
+    state: directory
+  with_items:
+    - "{{ jenkins_home_data }}/"
+    - "{{ jenkins_home_tmp }}/"
+    - "{{ jenkins_home }}/updates/"
+    - "{{ jenkins_home }}/init.groovy.d"
+  tags:
+    - jenkins
+
+# - name: Set the Jenkins home directory
+#   lineinfile:
+#     dest: "{{ jenkins_init_file }}"
+#     regexp: '^JENKINS_HOME=.*'
+#     line: 'JENKINS_HOME={{ jenkins_home }}'
+#   register: jenkins_home_config
+
+
+# - name: Set HTTP port in Jenkins config.
+#   lineinfile:
+#     backrefs: yes
+#     dest: "{{ jenkins_init_file }}"
+#     regexp: '^{{ jenkins_http_port_param }}='
+#     line: '{{ jenkins_http_port_param }}={{ jenkins_http_port }}'
+#   register: jenkins_http_config
+
+
+
+- name: configure default users
+  template:
+    src: basic-security.groovy
+    owner: "{{ jenkins_user }}"
+    group: "{{ jenkins_group }}"
+    dest: "{{ jenkins_home }}/init.groovy.d/basic-security.groovy"
+  when: first_install_jenkins_file.stat.exists == False
+  tags:
+    - jenkins
+- name: copy jenkins.service
+  template:
+    src: "jenkins.service"
+    dest: /etc/systemd/system/jenkins.service
+    force: true
+    owner: "{{ jenkins_user }}"
+    group: "{{ jenkins_group }}"
+    mode: 0644
+  tags:
+    - jenkins
+- name: reload systemd
+  command: "systemctl daemon-reload"
+  tags:
+    - jenkins
+# Make sure Jenkins starts, then configure Jenkins.
+- name: Ensure Jenkins is started and runs on startup.
+  service: name=jenkins state=restarted enabled=yes
+  tags:
+    - jenkins
+    
+- name: create  first_install_jenkins_file
+  file:
+    path: "{{ jenkins_home }}/.first_install_jenkins_file"
+    owner: "{{ jenkins_user }}"
+    group: "{{ jenkins_group }}"
+    state: touch
+  when: first_install_jenkins_file.stat.exists == False
+  tags:
+    - jenkins
+
+#Configure Jenkins init settings.
+- include: settings.yml
+
+
+- name: Wait for Jenkins to start up before proceeding.
+  shell: "curl -D - --silent --max-time 5 http://{{ jenkins_hostname }}:{{ jenkins_http_port }}{{ jenkins_url_prefix }}/cli/"
+  register: result
+  until: (result.stdout.find("403 Forbidden") != -1) or (result.stdout.find("200 OK") != -1) and (result.stdout.find("Please wait while") == -1)
+  retries: "{{ jenkins_connection_retries }}"
+  delay: "{{ jenkins_connection_delay }}"
+  changed_when: false
+  tags:
+    - jenkins
+- name: Get the jenkins-cli jarfile from the Jenkins server.
+  get_url:
+    url: "http://{{ jenkins_hostname }}:{{ jenkins_http_port }}{{ jenkins_url_prefix }}/jnlpJars/jenkins-cli.jar"
+    dest: "{{ jenkins_jar_location }}"
+    owner: "{{ jenkins_user }}"
+    group: "{{ jenkins_group }}"
+  register: jarfile_get
+  until: "'OK' in jarfile_get.msg or 'file already exists' in jarfile_get.msg"
+  retries: 5
+  delay: 10
+  tags:
+    - jenkins
+- name: Remove Jenkins security init scripts after first startup.
+  file:
+    path: "{{ jenkins_home }}/init.groovy.d/basic-security.groovy"
+    state: absent
+  tags:
+    - jenkins
+# Update Jenkins and install configured plugins.
+- include: plugins.yml

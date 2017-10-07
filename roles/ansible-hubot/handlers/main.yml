@@ -1,0 +1,26 @@
+---
+# File handlers/main.yml Handlers for Hubot role
+
+- name: enable hubot
+  become: True
+  become_user: root
+  service: name=hubot enabled=true
+  tags: ansible-hubot
+
+- name: restart hubot
+  become: True
+  become_user: root
+  service: name=hubot state=restarted
+  tags: ansible-hubot
+
+- name: start hubot
+  become: True
+  become_user: root
+  service: name=hubot state=started
+  tags: ansible-hubot
+
+- name: stop hubot
+  become: True
+  become_user: root
+  service: name=hubot state=stopped
+  tags: ansible-hubot

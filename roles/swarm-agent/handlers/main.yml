@@ -1,0 +1,33 @@
+---
+# handlers file for jenkins-agent
+# - name: Reload Systemd
+#   systemd:
+#     daemon_reload: yes
+#     name: "{{ jenkins_swarm_service_name }}"
+#     enabled: yes
+#     state: started
+#   when: ansible_service_mgr == "systemd"
+#   become: true
+
+- name: Reload Systemd
+  command: "systemctl daemon-reload"
+  when: ansible_service_mgr == "systemd"
+  tags:
+    - jenkins
+
+- name: Restart Swarm Client service
+  service:
+    name: "{{ jenkins_swarm_service_name }}"
+    enabled: yes
+    state: restarted
+  become: true
+
+- name: Install Jenkins as a service
+  win_shell: "{{ win_swarm_client_wrapper_path }} install"
+  notify: Start the Jenkins service
+
+- name: Start the Jenkins service
+  win_service:
+    name: "{{ jenkins_swarm_task_name }}"
+    start_mode: auto
+    state: started

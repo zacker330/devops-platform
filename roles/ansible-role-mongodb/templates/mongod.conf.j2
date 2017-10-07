@@ -1,0 +1,30 @@
+# mongod.conf
+
+# for documentation of all options, see:
+#   http://docs.mongodb.org/manual/reference/configuration-options/
+
+{% if mongodb_fork is defined %}
+# whether to fork the process or not
+fork = {{ mongodb_fork }}
+{% endif %}
+
+{% if mongodb_pidfilepath is defined %}
+pidfilepath = {{ mongodb_pidfilepath }}
+{% endif %}
+{% if mongodb_logpath is defined %}
+
+logpath = {{ mongodb_logpath }}
+{% endif %}
+{% if mongodb_unixsocketprefix is defined %}
+
+unixSocketPrefix = {{ mongodb_unixsocketprefix }}
+{% endif %}
+{% if mongodb_dbpath is defined %}
+
+dbpath = {{ mongodb_dbpath }}
+{% endif %}
+
+# replication
+{% if mongodb_repl_lines is defined %}
+{{ mongodb_repl_lines }}
+{% endif %}

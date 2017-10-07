@@ -1,0 +1,158 @@
+---
+- stat: path={{pinpoint_web_path}}
+  register: __pinpoint_web_path
+  tags:
+    - pinpoint
+
+- name: "mv {{tomcat_path}} {{pinpoint_web_path}}"
+  become_user: "{{username}}"
+  command: mv {{tomcat_path}} {{pinpoint_web_path}}
+  when: __pinpoint_web_path.stat.exists == False
+  tags:
+    - pinpoint
+
+- name: chmod
+  file:
+    path: "{{pinpoint_web_path}}/"
+    recurse: yes
+    owner: "{{username}}"
+    group: "{{usergroup}}"
+    mode: "ug=rwx,o=rx"
+  tags:
+    - pinpoint
+
+- name: "link {{pinpoint_web_home}} to  {{pinpoint_web_path}}"
+  file:
+    dest: "{{pinpoint_web_home}}"
+    src: "{{pinpoint_web_path}}"
+    state: link
+  tags:
+    - pinpoint
+
+
+
+- name: "copy pinpoint_web /tmp/{{pinpoint_web_war_name}}"
+  copy:
+    src: '{{pinpoint_web_war_name}}'
+    dest: "/tmp/{{pinpoint_web_war_name}}"
+    owner: "{{ username }}"
+    group: "{{ usergroup }}"
+    mode: "ug=rwx,o=rx"
+  ignore_errors: yes
+  tags:
+    - pinpoint
+
+
+# - name: unzip war
+#   become: "{{username}}"
+#   shell: "unzip {{pinpoint_web_home}}/webapps/{{pinpoint_web_war_name}} -d {{pinpoint_web_home}}/webapps/ROOT"
+#   tags:
+#     - pinpoint
+
+# - name: unzip war
+#   become: "{{username}}"
+#   shell: "unzip  -d {{pinpoint_web_home}}/webapps/"
+#   tags:
+#     - pinpoint
+
+- file:
+    path: "{{pinpoint_web_war_unzip_folder}}"
+    state: directory
+    owner: "{{ username }}"
+    group: "{{ usergroup }}"
+    mode: "ug=rwx,o=rx"
+  tags:
+    - pinpoint
+
+
+- name: unzip war
+  unarchive:
+    src: "/tmp/{{pinpoint_web_war_name}}"
+    dest: "{{pinpoint_web_war_unzip_folder}}"
+    owner: "{{ username }}"
+    group: "{{ usergroup }}"
+    remote_src: true
+  tags:
+    - pinpoint
+
+
+- name: template hbase.properties
+  template:
+    src: "{{item}}"
+    dest: "{{pinpoint_web_war_unzip_folder}}/WEB-INF/classes"
+    owner: "{{ username }}"
+    group: "{{ usergroup }}"
+    mode: "ug=rwx,o=rx"
+  with_items:
+      - hbase.properties
+      - pinpoint-web.properties
+  tags:
+    - pinpoint
+
+
+- name: "configure {{ pinpoint_web_home }}/conf/server.xml"
+  template:
+    src: "pinpoint-web-server.xml"
+    dest: "{{ pinpoint_web_home }}/conf/server.xml"
+    owner: "{{username}}"
+    group: "{{usergroup}}"
+    mode: "ug=rwx,o=rx"
+    force: true
+  tags:
+    - pinpoint
+
+- stat:
+    path: "/tmp/{{pinpoint_web_war_name}}"
+  register: __pinpoint_web_war_name
+  tags:
+    - pinpoint
+
+- name: download pinpoint web from "{{pinpoint_web_download_url}}"
+  get_url:
+    ## against apache's forbbiden
+    headers: "User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/54.0.2840.59 Safari/537.36"
+    url: "{{pinpoint_web_download_url}}"
+    dest: "{{pinpoint_web_home}}/webapps"
+    owner: "{{ username }}"
+    group: "{{ usergroup }}"
+    mode: "ug=rwx,o=rx"
+  when: __pinpoint_web_war_name.stat.exists == False
+  tags:
+    - pinpoint
+
+
+- name: template pinpoint_web_services
+  template:
+    src: "pinpoint-web.service"
+    dest: "/etc/systemd/system/{{ pinpoint_web_services_name }}.service"
+    owner: "{{ username }}"
+    group: "{{ usergroup }}"
+    mode: "ug=rwx,o=rx"
+  tags:
+    - pinpoint
+
+- name: reload systemctl daemon
+  command: systemctl daemon-reload
+  tags:
+    - pinpoint
+
+
+- name: "configure | Ensure {{ pinpoint_web_services_name }} is started and enabled on boot."
+  service: "name={{ pinpoint_web_services_name }} state=restarted enabled=yes"
+  tags:
+    - pinpoint
+
+- name: "configure | Wait {{ pinpoint_web_catalina_port }} port is opening."
+  wait_for: port={{ pinpoint_web_catalina_port }}
+  tags:
+    - pinpoint
+
+# - name: logrotate | Setup Tomcat logrotate conf file.
+#   template:
+#     dest: "/etc/logrotate.d/{{ pinpoint_web_services_name }}"
+#     src: tomcat.logrotate.j2
+#     owner: "{{username}}"
+#     group: "{{usergroup}}"
+#     mode: "ug=rwx,o=rx"
+#   tags:
+#     - pinpoint

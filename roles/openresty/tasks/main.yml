@@ -1,0 +1,187 @@
+---
+# 安装openresty，不作配置
+
+- name: "create group if not exists"
+  group:
+    name: "{{nginx_group}}"
+    state: present
+  tags:
+    - openresty
+- name: "check user is exists"
+  shell: "id {{nginx_user}} >& /dev/null"
+  register: user_exist
+  ignore_errors: true
+  tags:
+    - openresty
+- name: "create {{nginx_user}} if not exists"
+  user:
+    name: "{{nginx_user}}"
+    group: "{{nginx_group}}"
+  when: user_exist != 0
+  tags:
+    - openresty
+
+- name: install prepare software
+  package: name="{{item}}" state=present
+  become: true
+  with_items:
+    - "perl"
+    - "readline"
+    - "pcre.x86_64"
+    - "pcre-devel.x86_64"
+    - "openssl-devel"
+    - "gcc"
+  tags:
+    - openresty
+
+# - name: install epel-release
+#   yum:
+#     name: "{{item}}"
+#     state: present
+#   with_items:
+#     - epel-release
+#   tags:
+#     - syslog-ng
+
+
+- stat: path="/usr/local/openresty"
+  register: openresty
+  tags:
+    - openresty
+
+- name: copy openrety tar
+  copy:
+    src: "{{openresty_version}}.tar.gz"
+    dest: "/tmp"
+  ignore_errors: true
+  tags:
+    - openresty
+
+- name: exists openresty tar gz
+  stat:
+    path: "/tmp/{{openresty_version}}.tar.gz"
+  register: __openresty_tar_gz_file
+  tags:
+    - openresty
+
+- name: download openresty
+  get_url:
+    url: "{{openresty_download_url}}"
+    dest: "/tmp"
+    validate_certs: no
+    headers: "User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/54.0.2840.59 Safari/537.36"
+  when: __openresty_tar_gz_file.stat.exists == False
+  tags:
+    - openresty
+
+- name: unarchive nginx
+  unarchive: src="/tmp/{{openresty_version}}.tar.gz" dest="/tmp" copy=no
+  tags:
+    - openresty
+
+- stat:
+    path: /usr/src/.had_compile_openresty
+  register: had_compile_openresty
+  tags:
+    - openresty
+
+- name: compile nginx
+  shell: "{{item}}"
+  become: true
+  args:
+    chdir: "/tmp/{{openresty_version}}/"
+  with_items:
+    - ./configure --with-luajit --with-stream --with-stream_ssl_module
+    - make
+    - make install
+  when: had_compile_openresty.stat.exists == False
+  tags:
+    - openresty
+
+
+- file:
+    state: touch
+    path: /usr/src/.had_compile_openresty
+  tags:
+    - openresty
+
+- file: src="/usr/local/openresty" dest="/usr/local/nginx" state=link
+  become: true
+  tags:
+    - openresty
+
+- template: src="nginx.conf" force=true dest="/usr/local/openresty/nginx/conf/" owner=root group=root
+  become: true
+  notify:
+    - "restart nginx"
+  tags:
+    - openresty
+
+- name: mkdir log folder
+  file: path="{{nginx_log_path}}" owner=nobody group=root state=directory mode=0755
+  become: true
+  tags:
+    - openresty
+
+- name: mkdir stream folder
+  file:
+    path: "{{nginx_stream_conf_path}}"
+    owner: "root"
+    group: "root"
+    state: directory
+    mode: "u=rwx,og=rx"
+  tags:
+    - openresty
+
+
+- name: copy nginx.service to /etc/systemd/system/
+  template: src="nginx.service" dest="/etc/systemd/system/" force=true owner=root group=root
+  notify:
+    - "restart nginx"
+  become: true
+  tags:
+    - openresty
+
+- name: reload systemd
+  command: "systemctl daemon-reload"
+  become: true
+  tags:
+    - openresty
+
+- name: mkdir serviers dir
+  file: path="{{nginx_servers_conf_path}}" state=directory owner=root group=root recurse=true
+  become: true
+  tags:
+    - openresty
+
+- name: cut log
+  file: path="{{nginx_log_cut_path}}" owner=nobody group=root state=directory mode=0755
+  become: true
+  tags:
+    - openresty
+
+- name: template log cut sh
+  template: src="log_cut.sh" dest="/var/run" mode=0766 force=true
+  become: true
+  tags:
+    - openresty
+
+- name: cron execute log cut
+  cron: name="nginx log cut" minute="00" hour="00" day="*" month="*" job="sh /var/run/log_cut.sh" user=root
+  become: true
+  tags:
+    - openresty
+
+- name: install python-passlib for httppasswd
+  yum:
+    name: python-passlib
+    state: present
+  when: is_install_python_passlib == True
+  tags:
+    - openresty
+
+
+- service: name="nginx" state="started" enabled=yes
+  become: true
+  tags:
+    - openresty

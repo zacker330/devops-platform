@@ -1,0 +1,14 @@
+[Unit]
+Description=Jenkins
+After=network.target
+
+[Service]
+User={{jenkins_user}}
+Group={{jenkins_group}}
+Environment="JAVA_HOME={{JAVA_HOME}}"
+Environment="JAVA_OPTS=-XX:PermSize=1024M -XX:MaxPermSize=4048M -Xmn2048M -Xms1024M -Xmx4048M -Djenkins.install.runSetupWizard=false -Duser.timezone=Asia/Shanghai -DJENKINS_HOME={{ jenkins_home }} -Djava.io.tmpdir={{ jenkins_home_tmp }} "
+
+ExecStart={{JAVA_HOME}}/bin/java $JAVA_OPTS $TIMEZONE -jar {{ jenkins_home }}/jenkins.war --httpPort={{ jenkins_http_port }} --prefix={{ jenkins_url_prefix }}
+
+[Install]
+WantedBy=multi-user.target

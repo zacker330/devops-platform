@@ -1,0 +1,40 @@
+---
+- name: mkdir app folder
+  file:
+    path: "/app"
+    state: directory
+    owner: "{{username}}"
+    group: "{{usergroup}}"
+    mode: "ug=rwx,o=rx"
+  tags:
+    - pinpoint
+
+- name: stat
+  stat:
+    path: "/app/{{tomcat_file}}"
+  register: __tomcat_file
+  tags:
+    - pinpoint
+
+- name: download tomcat from "{{tomcat_file_url}}"
+  get_url:
+    headers: "User-Agent:Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/54.0.2840.59 Safari/537.36"
+    url: "{{ tomcat_file_url }}"
+    dest: /app
+    owner: "{{username}}"
+    group: "{{usergroup}}"
+    mode: "ug=rwx,o=rx"
+  when: __tomcat_file.stat.exists == False
+  tags:
+    - pinpoint
+
+- name: "unarchive /app/{{ tomcat_file }}"
+  unarchive:
+    src: "/app/{{ tomcat_file }}"
+    dest: "/app/"
+    remote_src: yes
+    owner: "{{username}}"
+    group: "{{usergroup}}"
+    mode: "ug=rwx,o=rx"
+  tags:
+    - pinpoint

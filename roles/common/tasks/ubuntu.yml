@@ -1,0 +1,23 @@
+---
+- name: copy sources.list
+  copy: src="sources{{ansible_distribution_major_version}}.list" dest="/etc/apt/" force=yes
+  tags:
+    - common     
+
+
+- apt: update_cache=yes cache_valid_time=72000
+  ignore_errors: yes
+  tags:
+    - common     
+
+- name: install softwares
+  apt: name={{item}} state=present allow_unauthenticated=yes
+  with_items:
+    - wget
+    - unzip
+    - openssh-server
+  tags:
+    - common     
+
+# - name: disable ufw
+#   ufw: state='disabled'

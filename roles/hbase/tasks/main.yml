@@ -1,0 +1,283 @@
+---
+# - name: install gtar
+#   apt:
+#     name: gtar
+#     state: installed
+
+# - lineinfile:
+#     dest: /etc/hosts
+#     state: absent
+#     regexp: "{{item}}"
+#   with_items:
+#     - '^127\.0\.0\.1.*?\n'
+#     - '^127\.0\.1\.1.*?\n'
+#   tags:
+#     - hbase
+
+- name: hostname to /etc/hosts
+  lineinfile: dest="/etc/hosts" line="{{innerip}} {{ ansible_hostname }} localhost"
+  ignore_errors: yes
+  tags:
+    - common
+
+
+- name: create hbase group
+  group:
+    name: "{{hbase_group}}"
+    system: yes
+  tags:
+    - hbase
+
+- name: create hbase user
+  user:
+    name: "{{hbase_user}}"
+    group: "{{hbase_group}}"
+    createhome: yes
+  when: hbase_is_slave is not defined  and  hbase_is_slave == "true"
+  tags:
+    - hbase
+
+- name: create hbase user
+  user:
+    name: "{{hbase_user}}"
+    group: "{{hbase_group}}"
+    createhome: yes
+    generate_ssh_key: yes
+    ssh_key_bits: 2048
+    ssh_key_file: .ssh/id_rsa
+  when: hbase_is_master is defined and  hbase_is_master == "true"
+  tags:
+    - hbase
+#
+# - name: fetch public key
+#   fetch:
+#     src: "{{hbase_user_home}}/.ssh/id_rsa.pub"
+#     dest: /tmp/hbase_id_rsa.pub
+#     flat: yes
+#   when: hbase_is_master is defined and  hbase_is_master == "true"
+#   changed_when: false
+#   tags:
+#     - hbase
+#
+#
+# - name: master node ssh config
+#   template:
+#     src: ssh.conf
+#     dest: "{{hbase_user_home}}/.ssh/config"
+#     mode: "400"
+#     owner: "{{ hbase_user }}"
+#     group: "{{ hbase_group }}"
+#   when: hbase_is_master is defined and  hbase_is_master == "true"
+#   tags:
+#     - hbase
+#
+# - name: add master public key to slaves
+#   authorized_key:
+#     user: "{{hbase_user}}"
+#     key: "{{ lookup('file', '/tmp/hbase_id_rsa.pub') }}"
+#   when: hbase_is_slave is not defined  and  hbase_is_slave == "true"
+#   tags:
+#     - hbase
+#
+# - name: make .ssh folder 700
+#   file:
+#     path: "{{hbase_user_home}}/.ssh/"
+#     state: directory
+#     mode: "700"
+#     owner: "{{ hbase_user }}"
+#     group: "{{ hbase_group }}"
+#   tags:
+#     - hbase
+
+- name: "copy {{hbase_tar_name}}"
+  copy:
+    src: "{{hbase_tar_name}}"
+    dest: "{{hbase_user_home}}/{{hbase_tar_name}}"
+    owner: "{{hbase_user}}"
+    group: "{{hbase_group}}"
+    mode: "ug=rwx,o=rx"
+  ignore_errors: True
+  tags:
+    - hbase
+
+- name: copied
+  stat:
+    path: "{{hbase_user_home}}/{{hbase_tar_name}}"
+  register: copiedHbase
+  tags:
+    - hbase
+
+- name: "Download Hbase"
+  get_url:
+    dest: "{{hbase_user_home}}/{{hbase_tar_name}}"
+    url: "{{hbase_download_url}}"
+    owner: "{{ hbase_user }}"
+    group: "{{hbase_group}}"
+    mode: "ug=rwx,o=rx"
+  when: copiedHbase.stat.exists == False
+  tags:
+    - hbase
+
+- name: "Unpack hbase"
+  unarchive:
+    remote_src: true
+    dest: "{{hbase_user_home}}"
+    src: "{{hbase_user_home}}/{{hbase_tar_name}}"
+    owner: "{{ hbase_user }}"
+    group: "{{hbase_group}}"
+    mode: "ug=rwx,o=rx"
+  tags:
+    - hbase
+
+
+- name: "chmode hbase folder"
+  file:
+    path: "{{hbase_user_home}}/hbase-{{hbase_version}}"
+    state: directory
+    recurse: yes
+    owner: "{{ hbase_user }}"
+    group: "{{hbase_group}}"
+    mode: "ug=rwx,o=rx"
+  tags:
+    - hbase
+
+- name: link hbase directory "{{hbase_user_home}}/hbase-{{hbase_version}}"
+  file:
+    dest: "{{hbase_home}}"
+    src: "{{hbase_user_home}}/hbase-{{hbase_version}}"
+    state: link
+    owner: "{{ hbase_user }}"
+    group: "{{ hbase_group }}"
+    mode: "ug=rwx,o=rx"
+  tags:
+    - hbase
+
+
+
+
+- name: "create dir for hbase"
+  file:
+    path: "{{item}}"
+    mode: "ug=rwx,o=rx"
+    owner: "{{hbase_user}}"
+    group: "{{hbase_group}}"
+    state: directory
+  with_items:
+    - "{{hbase_log_directory}}"
+    - "{{hbase_local_dir}}"
+    - "{{hbase_local_dir}}/jars"
+    - "{{hbase_tmp_dir}}"
+  tags:
+    - hbase
+
+
+- name: copy hadoop native lib
+  copy:
+    src: "{{hadoop_native_lib}}"
+    dest: "{{hbase_home}}"
+    owner: "{{hbase_user}}"
+    group: "{{hbase_group}}"
+    mode: "ug=rwx,o=rx"
+  tags:
+    - hbase
+    - init-hadoop-native-lib
+
+- name: create native folder "{{hbase_home}}/lib/native"
+  file:
+    path: "{{hbase_home}}/lib/native"
+    state: directory
+    owner: "{{hbase_user}}"
+    group: "{{hbase_group}}"
+    mode: "ug=rwx,o=rx"
+  tags:
+    - hbase
+    - init-hadoop-native-lib
+
+- name: unarchive native hadoop lib to "{{hbase_home}}/lib"
+  unarchive:
+    src: "{{hbase_home}}/{{hadoop_native_lib}}"
+    dest: "{{hbase_home}}/lib/native"
+    owner: "{{hbase_user}}"
+    group: "{{hbase_group}}"
+    mode: "ug=rwx,o=rx"
+    remote_src: yes
+  tags:
+    - hbase
+    - init-hadoop-native-lib
+
+- name: config hbase
+  template:
+    src: "{{item}}"
+    dest: "{{hbase_home}}/conf/"
+    owner: "{{ hbase_user }}"
+    group: "{{ hbase_group }}"
+    mode: "ug=rwx,o=rx"
+    force: true
+  with_items:
+    - conf/regionservers
+    - conf/backup-masters
+    - conf/hbase-site.xml
+    - conf/hbase-env.sh
+  tags:
+    - hbase
+#
+# - name: stop hbase
+#   become_user: "{{hbase_user}}"
+#   action: "shell {{ hbase_home }}/bin/stop-hbase.sh"
+#   ignore_errors: yes
+#
+# - name: start hbase
+#   become_user: "{{hbase_user}}"
+#   action: "shell {{ hbase_home }}/bin/start-hbase.sh"
+
+- name: init /etc/profile
+  lineinfile:
+    dest: /etc/profile
+    state: present
+    line: "{{item}}"
+  with_items:
+    - "JAVA_HOME={{JAVA_HOME}}"
+    - "HBASE_HOME={{hbase_home}}"
+    - "HBASE_CLASSPATH={{hbase_home}}/conf"
+  tags:
+    - hbase
+
+- name: Setup hbase hbase-master.service script
+  template:
+    src: hbase-master.service
+    dest: "/etc/systemd/system/"
+    owner: "{{hbase_user}}"
+    group: "{{hbase_group}}"
+    mode: "ug=rwx,o=rx"
+  when: hbase_is_master is defined and  hbase_is_master == "true"
+  tags:
+    - hbase
+
+- name: Setup hbase hbase-regionserver.service script
+  template:
+    src: hbase-regionserver.service
+    dest: "/etc/systemd/system/"
+    owner: "{{hbase_user}}"
+    group: "{{hbase_group}}"
+    mode: "ug=rwx,o=rx"
+  when: hbase_is_slave is not defined  and  hbase_is_slave == "true"
+  tags:
+    - hbase
+
+- name: reload systemctl daemon
+  command: systemctl daemon-reload
+  tags:
+    - hbase
+
+- name: start hbase master
+  service: name=hbase-master state=restarted enabled=true
+  when: hbase_is_master is defined and  hbase_is_master == "true"
+  tags:
+    - hbase
+
+
+- name: start hbase regionservers
+  service: name=hbase-regionserver state=restarted enabled=true
+  when: hbase_is_slave is not defined  and  hbase_is_slave == "true"
+  tags:
+    - hbase

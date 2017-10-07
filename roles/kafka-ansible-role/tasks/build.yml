@@ -1,0 +1,97 @@
+---
+
+# - name: "create {{kafka_install_dir}}"
+#   file:
+#     path: "{{kafka_install_dir}}"
+#     state: directory
+#     owner: "{{ kafka_user }}"
+#     group: "{{ kafka_group }}"
+#   tags:
+#     - kafka
+
+- name: Remove lost+found in the datadir
+  become: yes
+  file:
+    path: "{{kafka_data_dir}}/lost+found"
+    state: absent
+    owner: "{{ kafka_user }}"
+    group: "{{ kafka_group }}"
+  tags:
+    - kafka
+
+- name: copy
+  copy:
+    src: "kafka_{{ kafka_version_scala }}-{{ kafka_version_kafka }}.tgz"
+    dest: "/tmp/kafka_{{ kafka_version_scala }}-{{ kafka_version_kafka }}.tgz"
+    owner: "{{ kafka_user }}"
+    group: "{{ kafka_group }}"
+    mode: "ug=rwx,o=rx"
+  ignore_errors: yes
+  tags:
+    - kafka
+
+- name: stat
+  stat:
+    path: "/tmp/kafka_{{ kafka_version_scala }}-{{ kafka_version_kafka }}.tgz"
+  register: kafka_tgz_file
+  tags:
+    - kafka
+
+- name: "Fetch kafka binary package from {{kafka_download_url}}"
+  get_url:
+    dest: "/tmp/kafka_{{ kafka_version_scala }}-{{ kafka_version_kafka }}.tgz"
+    url: "{{kafka_download_url}}"
+    owner: "{{ kafka_user }}"
+    group: "{{ kafka_group }}"
+    mode: "u=rwx,og=rx"
+  when: kafka_tgz_file.stat.exists == False
+  tags:
+    - kafka
+
+- name: Uncompress the kafka tar
+  unarchive:
+    src: "/tmp/kafka_{{ kafka_version_scala }}-{{ kafka_version_kafka }}.tgz"
+    dest: "{{kafka_install_dir}}"
+    owner: "{{ kafka_user }}"
+    group: "{{ kafka_group }}"
+    mode: "u=rwx,og=rx"
+    remote_src: true
+  tags:
+    - kafka
+
+# - name: Uncompress the kafka tar
+#   become_user: "{{kafka_user}}"
+#   unarchive:
+#     src: "/tmp/kafka_{{ kafka_version_scala }}-{{ kafka_version_kafka }}.tgz"
+#     remote_src: true
+#     dest: "{{kafka_install_dir}}/"
+#   tags:
+#     - kafka
+
+- name: "check {{KAFKA_HOME}}"
+  stat:
+    path: "{{KAFKA_HOME}}"
+  register: kafka_home_dir
+  tags:
+    - kafka
+
+- name: "Move {{kafka_install_dir}}/kafka_{{ kafka_version_scala }}-{{ kafka_version_kafka }} to {{KAFKA_HOME}}"
+  command: "mv {{kafka_install_dir}}/kafka_{{ kafka_version_scala }}-{{ kafka_version_kafka }} {{KAFKA_HOME}}"
+  when: kafka_home_dir.stat.exists == False
+  tags:
+    - kafka
+
+- name: Ensure install folders
+  file:
+    recurse: yes
+    state: directory
+    path: "{{ item }}"
+    owner: "{{ kafka_user }}"
+    group: "{{ kafka_group }}"
+    mode: "ug=rwx,o=rx"
+  with_items:
+    - "{{kafka_tmp_dir}}"
+    - "{{kafka_data_dir}}"
+    - "{{kafka_conf_dir}}"
+  tags:
+    - kafka

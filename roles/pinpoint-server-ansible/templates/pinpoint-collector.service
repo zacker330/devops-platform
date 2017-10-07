@@ -1,0 +1,21 @@
+[Unit]
+Description=Tomcat
+After=network.target
+
+[Service]
+Type=forking
+User={{username}}
+Group={{usergroup}}
+Environment=JAVA_HOME={{JAVA_HOME}}
+Environment=CATALINA_PID={{pinpoint_collector_home}}/tomcat.pid
+Environment=CATALINA_HOME={{pinpoint_collector_home}}
+Environment=CATALINA_BASE={{pinpoint_collector_home}}
+Environment='CATALINA_OPTS=-Xms512M -Xmx1024M -server -XX:+UseParallelGC'
+Environment='JAVA_OPTS=-Djava.awt.headless=true -Djava.security.egd=file:/dev/./urandom'
+
+# EnvironmentFile=/etc/profile
+ExecStart={{pinpoint_collector_home}}/bin/startup.sh
+ExecStop={{pinpoint_collector_home}}/bin/shutdown.sh
+
+[Install]
+WantedBy=multi-user.target

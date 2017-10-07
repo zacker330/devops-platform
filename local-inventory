@@ -1,0 +1,59 @@
+
+[nginx]
+192.168.61.14 ip=192.168.61.14 innerip=192.168.61.14
+
+
+[zabbix-server]
+192.168.61.14 ip=192.168.61.14 innerip=192.168.61.14
+
+[jenkins]
+192.168.61.11 ip=192.168.61.11 innerip=192.168.61.11
+
+[jenkins-agent]
+192.168.61.12  ip=192.168.61.12 innerip=192.168.61.12
+192.168.61.13  ip=192.168.61.13 innerip=192.168.61.13
+
+[gitlab]
+192.168.61.12 ip=192.168.61.11 innerip=192.168.61.12
+
+[zookeepers]
+192.168.61.11  innerip=192.168.61.11 myid=1 zk_install_dir=/app/zk1
+192.168.61.12  innerip=192.168.61.12 myid=2 zk_install_dir=/app/zk2
+192.168.61.13  innerip=192.168.61.13 myid=3 zk_install_dir=/app/zk3
+
+[hadoop-namenode]
+192.168.61.11  innerip=192.168.61.11
+
+
+[hadoop-datanode]
+192.168.61.12  innerip=192.168.61.12
+192.168.61.13  innerip=192.168.61.13
+
+[hbase-master]
+192.168.61.11  innerip=192.168.61.11
+
+[hbase-slaves]
+192.168.61.13  innerip=192.168.61.13
+192.168.61.12  innerip=192.168.61.12
+
+
+[pinpoint-collector]
+192.168.61.13  innerip=192.168.61.13
+
+[rocketchat-server]
+192.168.61.15  innerip=192.168.61.15
+
+[mongodb]
+192.168.61.15  innerip=192.168.61.15
+
+[zabbix-agents]
+192.168.61.15  innerip=192.168.61.15 ip=192.168.61.15
+192.168.61.14  innerip=192.168.61.14 ip=192.168.61.14
+
+[mysql-server]
+192.168.61.16  innerip=192.168.61.16 ip=192.168.61.16
+
+[all:vars]
+env="local-env"
+ansible_ssh_user="vagrant"
+ansible_ssh_pass="vagrant"

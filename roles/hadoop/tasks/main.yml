@@ -1,0 +1,334 @@
+---
+- name: create hadoop group
+  group:
+    name: "{{hadoop_group}}"
+    system: yes
+  tags:
+    - hadoop
+
+- name: create hadoop user
+  user:
+    name: "{{hadoop_user}}"
+    group: "{{hadoop_group}}"
+    createhome: yes
+  # when: hadoop_is_datanode is defined and  hadoop_is_datanode == "true"
+  tags:
+    - hadoop
+
+# - name: create hadoop user
+#   user:
+#     name: "{{hadoop_user}}"
+#     group: "{{hadoop_group}}"
+#     createhome: yes
+#     generate_ssh_key: yes
+#     ssh_key_bits: 2048
+#     ssh_key_file: .ssh/id_rsa
+#   when: hadoop_is_namenode is defined and  hadoop_is_namenode == "true"
+#   tags:
+#     - hadoop
+
+# - name: retrieve public key
+#   shell: cat {{hadoop_user_home}}/.ssh/id_rsa.pub
+#   register: hadoop_namenode_public_key
+#   when: hadoop_is_namenode is defined and  hadoop_is_namenode == "true"
+#   changed_when: false
+#   tags:
+#     - hadoop
+
+#
+# - name: fetch public key
+#   fetch:
+#     src: "{{hadoop_user_home}}/.ssh/id_rsa.pub"
+#     dest: /tmp/
+#     flat: yes
+#   when: hadoop_is_namenode is defined and  hadoop_is_namenode == "true"
+#   changed_when: false
+#   tags:
+#     - hadoop
+
+
+#
+#
+# - name: namenode ssh config
+#   template:
+#     src: ssh.conf
+#     dest: "{{hadoop_user_home}}/.ssh/config"
+#     mode: "400"
+#     owner: "{{ hadoop_user }}"
+#     group: "{{ hadoop_group }}"
+#   when: hadoop_is_namenode is defined and  hadoop_is_namenode == "true"
+#   tags:
+#     - hadoop
+
+# - name: add master public key to slaves
+#   authorized_key:
+#     user: "{{hadoop_user}}"
+#     key: "{{ lookup('file', '/tmp/id_rsa.pub') }}"
+#   when: hadoop_is_datanode is defined and hadoop_is_datanode == "true"
+#   tags:
+#     - hadoop
+
+- name: add hadoopnamenode to hosts
+  lineinfile:
+    path: /etc/hosts
+    line: '{{hadoop_namenode_ip}} {{hadoop_namenode_hostname}}'
+  when: hadoop_is_namenode is defined and  hadoop_is_namenode == "true"
+  tags:
+    - hadoop
+#
+# - name: make .ssh folder 700
+#   file:
+#     path: "{{hadoop_user_home}}/.ssh/"
+#     state: directory
+#     mode: "700"
+#     owner: "{{ hadoop_user }}"
+#     group: "{{ hadoop_group }}"
+#   tags:
+#     - hadoop
+#
+# - name: copy ssh key
+#   copy:
+#     src: "{{item}}"
+#     dest: "{{hadoop_user_home}}/.ssh"
+#     owner: "{{ hadoop_user }}"
+#     group: "{{ hadoop_group }}"
+#     mode: 0600
+#   with_items:
+#     - id_rsa
+#     - id_rsa.pub
+#     - authorized_keys
+#   tags:
+#     - hadoop
+
+- name: add hadoopdatanode to hosts
+  lineinfile:
+    path: /etc/hosts
+    line: '{{item.ip}} {{item.hostname}}'
+  with_items: "{{hadoopdatanode_hostnames}}"
+  tags:
+    - hadoop
+
+- name: add hadoopdatanode to hosts
+  lineinfile:
+    path: /etc/hosts
+    line: '{{hadoop_namenode_ip}} {{hadoop_namenode_hostname}}'
+  when: hadoop_is_datanode is defined and hadoop_is_datanode == "true"
+  tags:
+    - hadoop
+
+
+
+- name: "copy {{hadoop_tar_name}}"
+  copy:
+    src: "{{hadoop_tar_name}}"
+    dest: "/home/{{hadoop_user}}/{{hadoop_tar_name}}"
+    owner: "{{hadoop_user}}"
+    group: "{{hadoop_group}}"
+    mode: "ug=rwx,o=rx"
+  ignore_errors: True
+  tags:
+    - hadoop
+
+- name: copied
+  stat:
+    path: "/home/{{hadoop_user}}/{{hadoop_tar_name}}"
+  register: copiedHadoop
+  tags:
+    - hadoop
+
+- name: "Download Hadoop from {{hadoop_download_url}}"
+  become: true
+  become_user: "{{hadoop_user}}"
+  get_url:
+    dest: "{{ hadoop_user_home }}/{{hadoop_tar_name}}"
+    url: "{{hadoop_download_url}}"
+    owner: "{{ hadoop_user }}"
+    group: "{{ hadoop_group }}"
+    mode: "ug=rwx,o=rx"
+  when: copiedHadoop.stat.exists == false
+  tags:
+    - hadoop
+
+- name: "Unpack hadoop"
+  unarchive:
+    copy: false
+    dest: "{{ hadoop_user_home }}"
+    src: "{{ hadoop_user_home }}/{{hadoop_tar_name}}"
+    owner: "{{hadoop_user}}"
+    group: "{{hadoop_group}}"
+    mode: "ug=rwx,o=rx"
+  tags:
+    - hadoop
+
+- name: link hadoop directory "{{hadoop_user_home}}/hadoop-{{hadoop_full_version}}"
+  file:
+    dest: "{{hadoop_home}}"
+    src: "{{hadoop_user_home}}/hadoop-{{hadoop_full_version}}"
+    state: link
+    owner: "{{ hadoop_user }}"
+    group: "{{ hadoop_group }}"
+  tags:
+    - hadoop
+
+- name: create hadoop log directory
+  file:
+    path: "{{hadoop_log_directory}}"
+    state: directory
+    owner: "{{ hadoop_user }}"
+    group: "{{ hadoop_group }}"
+    mode: "ug=rwx,o=rx"
+  tags:
+    - hadoop
+
+- name: config hadoop
+  template:
+    src: "{{item}}"
+    dest: "{{hadoop_home}}/etc/hadoop"
+    owner: "{{ hadoop_user }}"
+    group: "{{ hadoop_group }}"
+    mode: "ug=rwx,o=rx"
+  with_items:
+    - etc/hadoop/hdfs-site.xml
+    - etc/hadoop/mapred-site.xml
+    - etc/hadoop/core-site.xml
+    - etc/hadoop/yarn-site.xml
+    - etc/hadoop/slaves
+    - etc/hadoop/hadoop-env.sh
+  tags:
+    - hadoop
+
+
+- stat:
+    path: "{{ hadoop_home }}/name/"
+  register: namenode_format
+  tags:
+    - hadoop
+
+- name: format namenode
+  become_user: "{{hadoop_user}}"
+  command: "{{ hadoop_home }}/bin/hdfs namenode -format"
+  when: hadoop_is_namenode is defined and  hadoop_is_namenode == "true" and namenode_format.stat.exists == False
+  tags:
+    - hadoop
+
+- name: config hadooper datanode service
+  template:
+    src: "hadoop-datanode.service"
+    dest: "/etc/systemd/system/hadooper-datanode.service"
+    owner: "{{username}}"
+    group: "{{usergroup}}"
+    mode: "ug=rwx,o=rx"
+    force: true
+  when: hadoop_is_datanode is defined and hadoop_is_datanode == "true"
+  # notify:
+  #   - "restart hadhoop datanode service"
+  tags:
+    - hadoop
+
+
+- name: config hadooper namenode service
+  template:
+    src: "hadoop-namenode.service"
+    dest: "/etc/systemd/system/hadooper-namenode.service"
+    owner: "{{username}}"
+    group: "{{usergroup}}"
+    mode: "ug=rwx,o=rx"
+    force: true
+  when: hadoop_is_namenode is defined and  hadoop_is_namenode == "true"
+  # notify:
+  #   - "restart hadhoop namenode service"
+  tags:
+    - hadoop
+#
+- name: reload systemctl daemon
+  command: systemctl daemon-reload
+  tags:
+    - hadoop
+
+
+
+- name: start hadoop-dfs
+  become_user: "{{hadoop_user}}"
+  action: "shell {{ hadoop_home }}/sbin/hadoop-daemon.sh  --script hdfs start namenode"
+  when: hadoop_is_namenode is defined and  hadoop_is_namenode == "true"
+  ignore_errors: yes
+  tags:
+    - hadoop
+
+#
+# - name: stop yarn-resourcemanager
+#   become_user: "{{hadoop_user}}"
+#   action: "shell {{ hadoop_home }}/sbin/yarn-daemon.sh stop resourcemanager"
+#   when: hadoop_is_namenode is defined and  hadoop_is_namenode == "true"
+#   ignore_errors: yes
+#
+#
+# - name: start yarn-resourcemanager
+#   become_user: "{{hadoop_user}}"
+#   action: "shell {{ hadoop_home }}/sbin/yarn-daemon.sh start resourcemanager"
+#   when: hadoop_is_namenode is defined and  hadoop_is_namenode == "true"
+
+
+# - name: stop hadoop-datanode
+#   become_user: "{{hadoop_user}}"
+#   action: "shell {{ hadoop_home }}/sbin/hadoop-daemon.sh  --script hdfs stop datanode"
+#   when: hadoop_is_datanode is defined and hadoop_is_datanode == "true"
+#   ignore_errors: yes
+#   tags:
+#     - hadoop
+
+- name: start hadoop-datanode
+  become_user: "{{hadoop_user}}"
+  action: "shell {{ hadoop_home }}/sbin/hadoop-daemon.sh  --script hdfs start datanode"
+  when: hadoop_is_datanode is defined and hadoop_is_datanode == "true"
+  ignore_errors: yes
+  tags:
+    - hadoop
+
+
+# - name: stop yarn-nodemanager
+#   become_user: "{{hadoop_user}}"
+#   action: "shell {{ hadoop_home }}/sbin/yarn-daemon.sh stop nodemanager"
+#   when: hadoop_is_datanode is defined and hadoop_is_datanode == "true"
+#   ignore_errors: yes
+#
+# - name: start yarn-nodemanager
+#   become_user: "{{hadoop_user}}"
+#   action: "shell {{ hadoop_home }}/sbin/yarn-daemon.sh start nodemanager"
+#   when: hadoop_is_datanode is defined and hadoop_is_datanode == "true"
+
+#
+# - name: start hadhoop namenode service
+#   service:
+#     name: "hadoop-namenode"
+#     enabled: true
+#     state: started
+#   when: hadoop_is_namenode is defined and  hadoop_is_namenode == "true"
+#   tags:
+#     - hadoop
+#
+#
+# - name: start hadhoop datanode service
+#   service:
+#     name: "hadoop-datanode"
+#     enabled: true
+#     state: started
+#   when: hadoop_is_datanode is defined and hadoop_is_datanode == "true"
+#   tags:
+#     - hadoop
+
+- name: refreshDFSNodes
+  become_user: "{{hadoop_user}}"
+  command: "{{ hadoop_home }}/bin/hdfs dfsadmin -refreshNodes"
+  when: hadoop_is_namenode is defined and  hadoop_is_namenode == "true"
+  ignore_errors: yes
+  tags:
+    - hadoop
+
+
+#
+# - name: refreshYarnNodes
+#   become_user: "{{hadoop_user}}"
+#   command: "{{ hadoop_home }}/bin/yarn rmadmin -refreshNodes"
+#   when: hadoop_is_namenode is defined and  hadoop_is_namenode == "true"
+#   ignore_errors: yes

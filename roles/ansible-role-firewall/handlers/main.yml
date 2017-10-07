@@ -1,0 +1,6 @@
+---
+- name: restart firewall
+  service: name=firewall state=restarted
+  when: firewall_status != 'stopped'
+  tags:
+    - firewall
