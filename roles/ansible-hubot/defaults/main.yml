@@ -56,8 +56,9 @@ hubot_env:
    # HUBOT_HIPCHAT_ROOMS: "FIXME"        # Comma separated list of rooms to join
    # HUBOT_HIPCHAT_JOIN_ROOMS_ON_INVITE: "FIXME" # Replace with boolean value
 
-   # Slack variables
-   HUBOT_SLACK_TOKEN: "FIXME"
+   ## hubot jenkins
+   HUBOT_JENKINS_URL: "{{jenkins_url}}"
+   HUBOT_JENKINS_AUTH: "{{jenkins_admin_username}}:{{jenkins_admin_password}}"
 
    # Weather stuff
    # HUBOT_WUNDERGROUND_API_KEY: "FIXME" # Replace with Wunderground API key
@@ -102,7 +103,7 @@ hubot_node_packages:
   - hubot-qr
   - hubot-friendly
   - hubot-auth
-
+  - hubot-jenkins
 #############################################################################
 #
 # external_scripts: A list of additional Hubot scripts to use
@@ -122,6 +123,7 @@ hubot_external_scripts:
   - hubot-qr
   - hubot-friendly
   - hubot-auth
+  - hubot-jenkins
 #############################################################################
 #
 # hubot_custom_scripts: List of scripts from files/scripts to install
@@ -141,6 +143,7 @@ hubot_external_scripts:
 
 # hubot_external_git_scripts:
 #   - { name: hubot-jenkins-userauth, repo_url: "https://github.com/joestewart/hubot-jenkins-userauth.git" }
+#   - { name: hubot-jenkins-enhancement, repo_url: "https://github.com/zacker330/hubot-jenkins-enhanced.git"}
 
 # EPEL repository URL
 epel_repo_url: "https://dl.fedoraproject.org/pub/epel/epel-release-latest-{{ ansible_distribution_major_version }}.noarch.rpm"

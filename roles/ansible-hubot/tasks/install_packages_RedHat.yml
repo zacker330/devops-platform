@@ -42,9 +42,6 @@
     - libselinux-python
     - openssl-devel
     - expat-devel
-    - redis
+    - ansible
   tags: ansible-hubot
 
-- set_fact:
-    redis_server: redis
-  tags: ansible-hubot

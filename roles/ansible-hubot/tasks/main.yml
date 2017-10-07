@@ -29,17 +29,21 @@
   tags: ansible-hubot
   when: "ansible_os_family == 'RedHat'"
 
+- name: install git
+  yum:
+    name: git
+    state: latest
+  tags: ansible-hubot
 
 
-
-# - name: Install Node Version Manager
-#   become: True
-#   become_user: "{{ hubot_admin }}"
-#   git:
-#     repo: https://github.com/creationix/nvm.git
-#     dest: "{{ hubot_nvm_dir }}"
-#     accept_hostkey: True
-#   tags: ansible-hubot
+- name: Install Node Version Manager
+  become: True
+  become_user: "{{ hubot_admin }}"
+  git:
+    repo: "https://github.com/creationix/nvm.git"
+    dest: "{{ hubot_nvm_dir }}"
+    accept_hostkey: True
+  tags: ansible-hubot
 
 
 - name: Install Node.js
@@ -81,9 +85,9 @@
   tags: ansible-hubot
 
 
-# - name: Hubot home
-#   file: "path={{ hubot_dir }} state=directory owner={{ hubot_admin }}"
-#   tags: ansible-hubot
+- name: Hubot home
+  file: "path={{ hubot_dir }} state=directory owner={{ hubot_admin }}"
+  tags: ansible-hubot
 
 - name: Assemble Hubot
   become: True

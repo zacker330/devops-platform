@@ -1,8 +1,6 @@
 [jenkins]
 192.168.61.11 ip=192.168.61.11 innerip=192.168.61.11
 
-[gitlab]
-192.168.61.12 ip=192.168.61.11 innerip=192.168.61.12
 
 [rocketchat-server]
 192.168.61.15  innerip=192.168.61.15
@@ -10,6 +8,8 @@
 [mongodb]
 192.168.61.15  innerip=192.168.61.15
 
+[nginx]
+192.168.61.14 ip=192.168.61.14 innerip=192.168.61.14
 
 [all:vars]
 env="local-env"
